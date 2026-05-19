@@ -3,13 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NosotrosService, NosotrosConfig, MisionVisionItem, ValorItem, TimelineEvent } from '../../services/nosotros.service';
+import { AutoridadesService } from '../../services/autoridades.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
+import { Autoridad } from '../../models/api.models';
 
 type Tab = 'hero' | 'misionVision' | 'valores' | 'historia' | 'autoridades' | 'cta';
 
 @Component({
   selector: 'app-nosotros',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ImageUrlInputComponent],
   templateUrl: './nosotros.html',
 })
 export class Nosotros implements OnInit {
@@ -18,6 +21,8 @@ export class Nosotros implements OnInit {
   tabActiva: Tab = 'hero';
   guardado = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
+
+  autoridades: Autoridad[] = [];
 
   tabs: { id: Tab; label: string }[] = [
     { id: 'hero',        label: 'Hero'          },
@@ -28,14 +33,25 @@ export class Nosotros implements OnInit {
     { id: 'cta',         label: 'CTA'           },
   ];
 
-  constructor(private svc: NosotrosService) {}
+  constructor(
+    private svc: NosotrosService,
+    private autoridadesSvc: AutoridadesService,
+  ) {}
 
-  ngOnInit(): void { this.config = this.svc.getCopia(); }
+  ngOnInit(): void {
+    this.config = this.svc.getCopia();
+    this.svc.cargarDesdeBackend().subscribe(cfg => { this.config = cfg; });
+    
+    // Cargar autoridades
+    this.autoridadesSvc.autoridades$.subscribe(list => {
+      this.autoridades = list;
+    });
+  }
 
   onChange(): void { this.guardado = false; }
 
   guardar(): void {
-    this.svc.guardar(this.config);
+    this.svc.guardar(this.config).subscribe();
     this.guardado = true;
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => this.guardado = false, 3000);
