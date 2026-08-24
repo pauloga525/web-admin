@@ -2,13 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BibliotecaService, BibliotecaConfig, Libro, LibroCategoria } from '../../services/biblioteca.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
 type Tab = 'hero' | 'catalogo' | 'categorias';
 
 @Component({
   selector: 'app-biblioteca',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
   template: `
 <div class="p-8 max-w-5xl mx-auto w-full space-y-6">
   <div class="flex items-center justify-between">
@@ -90,7 +91,7 @@ type Tab = 'hero' | 'catalogo' | 'categorias';
               </button>
             </div>
             <div class="flex items-center gap-3 flex-wrap">
-              <input [(ngModel)]="libro.image" (ngModelChange)="onChange()" placeholder="URL imagen portada" class="flex-1 input-field text-xs min-w-0" />
+              <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="libro.image" (ngModelChange)="onChange()" placeholder="URL imagen portada" [showPreview]="false" />
               <input [(ngModel)]="libro.url" (ngModelChange)="onChange()" placeholder="Link del libro (URL)" class="flex-1 input-field text-xs min-w-0" />
               <select [(ngModel)]="libro.categoria" (ngModelChange)="onChange()"
                 class="text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 shrink-0">

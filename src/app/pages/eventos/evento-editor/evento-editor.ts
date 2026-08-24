@@ -3,13 +3,15 @@
  * @description Editor completo de un evento institucional.
  * Tabs: General, Imágenes, Agenda, Registro, Publicación.
  */
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule, Location } from '@angular/common';
 import { EventoService } from '../../../services/evento.service';
 import { ActivityService } from '../../../services/activity';
-import { Evento, Tab, AgendaItem, CategoriaEvento } from '../../../models';
+import { Evento, Tab, AgendaItem, CategoriaEvento } from '../../../models/api.models';
+import { Subscription } from 'rxjs';
+import { compressImageFileToDataUrl } from '../../../utils/image-compression';
 
 @Component({
   selector: 'app-evento-editor',
@@ -18,15 +20,17 @@ import { Evento, Tab, AgendaItem, CategoriaEvento } from '../../../models';
   styleUrl: './evento-editor.css',
   imports: [FormsModule, CommonModule],
 })
-export class EventoEditor implements OnInit {
+export class EventoEditor implements OnInit, OnDestroy {
 
   evento: Evento | undefined;
   breadcrumb = '';
   tabActiva  = 'general';
   guardado   = false;
   confirmarEliminar = false;
+  cargandoImagen = false;
 
   categorias: CategoriaEvento[] = [];
+  private subs = new Subscription();
 
   readonly tabs: Tab[] = [
     { id: 'general',    label: 'General'    },
@@ -46,14 +50,25 @@ export class EventoEditor implements OnInit {
 
   ngOnInit(): void {
     this.breadcrumb = history.state?.titulo ?? '';
-    this.categorias = this.eventoService.getCategorias();
+    this.subs.add(this.eventoService.categorias$.subscribe(categorias => {
+      this.categorias = categorias;
+    }));
 
     const id = this.route.snapshot.paramMap.get('id');
-    const original = this.eventoService.getById(Number(id));
-    if (original) {
-      this.evento = JSON.parse(JSON.stringify(original));
-      this.inicializar();
-    }
+    if (!id) return;
+
+    // getById ahora devuelve Observable<Evento> y acepta string (_id de Mongo)
+    this.eventoService.getById(id).subscribe({
+      next: original => {
+        this.evento = JSON.parse(JSON.stringify(original));
+        this.inicializar();
+      },
+      error: () => this.router.navigate(['/eventos']),
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
   }
 
   private inicializar(): void {
@@ -73,9 +88,10 @@ export class EventoEditor implements OnInit {
     // Regenerar slug si cambió el título
     this.evento.slug = this.eventoService.generarSlug(this.evento.titulo);
 
-    this.eventoService.actualizar(this.evento);
-    this.activityService.agregarActividad('evento', 'Evento actualizado', `Se guardaron los cambios de "${this.evento.titulo}".`);
-    this.guardado = true;
+    this.eventoService.actualizar(this.evento).subscribe(() => {
+      this.activityService.agregarActividad('evento', 'Evento actualizado', `Se guardaron los cambios de "${this.evento!.titulo}".`);
+      this.guardado = true;
+    });
   }
 
   pedirEliminar(): void    { this.confirmarEliminar = true; }
@@ -83,9 +99,10 @@ export class EventoEditor implements OnInit {
 
   confirmarEliminarEvento(): void {
     if (!this.evento) return;
-    this.activityService.agregarActividad('evento', 'Evento eliminado', `Se eliminó "${this.evento.titulo}".`);
-    this.eventoService.eliminar(this.evento.id);
-    this.router.navigate(['/eventos']);
+    this.eventoService.eliminar(this.evento._id).subscribe(() => {
+      this.activityService.agregarActividad('evento', 'Evento eliminado', `Se eliminó "${this.evento!.titulo}".`);
+      this.router.navigate(['/eventos']);
+    });
   }
 
   onCambio(): void { this.guardado = false; }
@@ -101,6 +118,30 @@ export class EventoEditor implements OnInit {
   eliminarImagen(i: number): void {
     this.evento?.galeria?.splice(i, 1);
     this.onCambio();
+  }
+
+  async procesarArchivoImagen(event: Event, index: number): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.cargandoImagen = true;
+    try {
+      const dataUrl = await compressImageFileToDataUrl(file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        maxBytes: 900 * 1024,
+      });
+      if (this.evento?.galeria) {
+        this.evento.galeria[index] = dataUrl;
+        this.onCambio();
+      }
+    } catch {
+      alert('Error al leer el archivo');
+    } finally {
+      this.cargandoImagen = false;
+      input.value = '';
+    }
   }
 
   trackByIndex(i: number): number { return i; }

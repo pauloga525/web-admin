@@ -32,6 +32,13 @@ export class Login implements OnInit {
 
   ngOnInit(): void {
     this.sesionExpirada = this.route.snapshot.queryParamMap.get('expired') === '1';
+    // Si hay token, primero confirma con el backend que siga siendo válido.
+    if (this.auth.isAuthenticated()) {
+      this.auth.refreshProfile().subscribe({
+        next: () => this.router.navigate(['/']),
+        error: () => this.auth.clearSession(),
+      });
+    }
   }
 
   submit(): void {
@@ -39,14 +46,15 @@ export class Login implements OnInit {
     this.error    = false;
     this.cargando = true;
 
-    setTimeout(() => {
-      const ok = this.auth.login(this.usuario.trim(), this.password);
-      if (ok) {
+    // login() devuelve Observable — hay que suscribirse
+    this.auth.login(this.usuario.trim(), this.password).subscribe({
+      next: () => {
         this.router.navigate(['/']);
-      } else {
+      },
+      error: () => {
         this.error    = true;
         this.cargando = false;
-      }
-    }, 600);
+      },
+    });
   }
 }

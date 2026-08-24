@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RepositoriosService, RepositoriosConfig, RepoColeccion, RepoPublicacion, RepoNavLink, RepoStat } from '../../services/repositorios.service';
 import { PlataformasService, Plataforma } from '../../services/plataformas.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
 type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
 
 @Component({
   selector: 'app-repositorios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
   template: `
 <div class="p-8 max-w-5xl mx-auto w-full space-y-6">
   <div class="flex items-center justify-between">
@@ -170,7 +171,7 @@ type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
               @else { <svg class="w-5 h-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> }
             </div>
             <input [(ngModel)]="p.name" (ngModelChange)="onChange()" placeholder="Nombre" class="w-28 input-field text-sm" />
-            <input [(ngModel)]="p.image" (ngModelChange)="onChange()" placeholder="URL logo" class="flex-1 input-field text-xs" />
+            <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="p.image" (ngModelChange)="onChange()" placeholder="URL logo" [showPreview]="false" />
             <input [(ngModel)]="p.url" (ngModelChange)="onChange()" placeholder="URL enlace" class="flex-1 input-field text-xs" />
             <button type="button" (click)="eliminarPlataforma(p.id)" class="text-slate-300 hover:text-red-500 transition shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg></button>
           </div>

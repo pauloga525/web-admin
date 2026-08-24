@@ -1,14 +1,18 @@
-/**
+﻿/**
  * @file home.service.ts
- * @description Servicio para gestión del contenido de la página principal (home).
- * Persiste en localStorage y expone un observable reactivo.
+ * @description Gestión del contenido de la página principal.
+ * Persiste en el backend via ConfiguracionApiService (clave: 'home').
+ * Mantiene localStorage como fallback offline.
  */
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
+import { ConfiguracionApiService } from './configuracion-api.service';
 import {
   HomeConfig, HomeBoton, HomePorQueItem, HomeNivel,
   HomeLogo, HomeCaracteristica, HomeEnlace, HomeFooterColumna,
 } from '../models';
+import { environment } from '../../environments/environment';
 
 const KEY = 'home_config';
 
@@ -37,9 +41,9 @@ const DEFAULT: HomeConfig = {
     { id: 4, icono: 'computer', titulo: 'Innovación tecnológica',  descripcion: 'Integración de herramientas digitales en el proceso de aprendizaje.' },
   ],
   niveles: [
-    { id: 1, imagen: '', nombre: 'Educación Básica',    descripcion: 'Formación integral para niños y jóvenes.',          enlace: '/niveles/basica'    },
-    { id: 2, imagen: '', nombre: 'Bachillerato General', descripcion: 'Preparación para la educación superior.',           enlace: '/niveles/bachillerato' },
-    { id: 3, imagen: '', nombre: 'Bachillerato Técnico', descripcion: 'Especialidades técnicas con salida laboral.',       enlace: '/especialidades'   },
+    { id: 1, imagen: '', nombre: 'Educación Básica',     descripcion: 'Formación integral para niños y jóvenes.',    enlace: '/niveles/basica'       },
+    { id: 2, imagen: '', nombre: 'Bachillerato General', descripcion: 'Preparación para la educación superior.',     enlace: '/niveles/bachillerato' },
+    { id: 3, imagen: '', nombre: 'Bachillerato Técnico', descripcion: 'Especialidades técnicas con salida laboral.', enlace: '/especialidades'       },
   ],
   eventos: {
     tituloSeccion: 'Próximos Eventos',
@@ -60,9 +64,9 @@ const DEFAULT: HomeConfig = {
     ],
   },
   comunicacion: [
-    { id: 1, nombre: 'Portal de estudiantes', url: '#' },
-    { id: 2, nombre: 'Plataforma virtual',    url: '#' },
-    { id: 3, nombre: 'Biblioteca digital',    url: '#' },
+    { id: 1, nombre: 'Portal de estudiantes', url: '', imagen: '' },
+    { id: 2, nombre: 'Plataforma virtual',    url: '', imagen: '' },
+    { id: 3, nombre: 'Biblioteca digital',    url: '', imagen: '' },
   ],
   admisiones: {
     titulo: 'Proceso de Admisión',
@@ -70,13 +74,13 @@ const DEFAULT: HomeConfig = {
     labelBoton: 'Iniciar inscripción',
     urlBoton: '/admisiones',
     enlaces: [
-      { id: 1, nombre: 'Requisitos de admisión', url: '#' },
-      { id: 2, nombre: 'Calendario de inscripciones', url: '#' },
+      { id: 1, nombre: 'Requisitos de admisión',        url: '' },
+      { id: 2, nombre: 'Calendario de inscripciones',   url: '' },
     ],
   },
   enlacesInteres: [
-    { id: 1, nombre: 'Ministerio de Educación', url: 'https://educacion.gob.ec' },
-    { id: 2, nombre: 'SENESCYT',                url: 'https://senescyt.gob.ec'  },
+    { id: 1, nombre: 'Ministerio de Educación', url: 'https://educacion.gob.ec', imagen: '' },
+    { id: 2, nombre: 'SENESCYT',                url: 'https://senescyt.gob.ec',  imagen: '' },
   ],
   footer: {
     nombreInstitucion: 'Unidad Educativa Técnica Salesiana',
@@ -94,27 +98,65 @@ const DEFAULT: HomeConfig = {
 @Injectable({ providedIn: 'root' })
 export class HomeService {
 
-  private subject = new BehaviorSubject<HomeConfig>(this.cargar());
+  private subject = new BehaviorSubject<HomeConfig>(DEFAULT);
   config$ = this.subject.asObservable();
 
-  private cargar(): HomeConfig {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return DEFAULT;
-    // Merge con defaults para garantizar que nuevas secciones existan
-    return { ...DEFAULT, ...JSON.parse(raw) };
+  constructor(private configApi: ConfiguracionApiService) {
+    this.configApi.get<HomeConfig>('home').pipe(
+      catchError((err) => {
+        // 404 = aún no existe en la BD → usar DEFAULT como punto de partida
+        // Otros errores (401, red) → usar localStorage como fallback
+        if (err?.status === 404) return of(DEFAULT);
+        return of(this.cargarLocal());
+      })
+    ).subscribe(config => {
+      let resolved: HomeConfig = config ?? DEFAULT;
+      // Unwrap legacy double-nested data: { datos: HomeConfig } stored by old saves
+      if (!resolved.hero && (resolved as any)?.datos?.hero) {
+        resolved = (resolved as any).datos as HomeConfig;
+      }
+      // Merge with DEFAULT so all required fields are always present
+      resolved = { ...DEFAULT, ...resolved, hero: { ...DEFAULT.hero, ...(resolved.hero ?? {}) } };
+      // Normalize GridFS URLs to current apiUrl (fixes images saved with a different host/IP)
+      resolved = this.normalizeGridfsUrls(resolved);
+      localStorage.setItem(KEY, JSON.stringify(resolved));
+      this.subject.next(resolved);
+    });
+  }
+
+  private cargarLocal(): HomeConfig {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? JSON.parse(raw) : DEFAULT;
+    } catch { return DEFAULT; }
   }
 
   get(): HomeConfig { return this.subject.value; }
 
-  guardar(config: HomeConfig): void {
-    localStorage.setItem(KEY, JSON.stringify(config));
-    this.subject.next(config);
+  guardar(config: HomeConfig): Observable<void> {
+    return this.configApi.guardar('home', config).pipe(
+      tap(() => this.subject.next(config))
+    );
   }
 
-  /** Retorna una copia profunda para edición segura. */
-  getCopia(): HomeConfig {
-    return JSON.parse(JSON.stringify(this.subject.value));
-  }
-
+  getCopia(): HomeConfig { return JSON.parse(JSON.stringify(this.subject.value)); }
   nextId(): number { return Date.now(); }
+
+  private normalizeGridfsUrls<T>(obj: T): T {
+    if (typeof obj === 'string') {
+      if (obj.includes('/api/v1/imagenes/gridfs/')) {
+        const id = obj.split('/api/v1/imagenes/gridfs/').pop();
+        return `${environment.apiUrl}/imagenes/gridfs/${id}` as unknown as T;
+      }
+      return obj;
+    }
+    if (Array.isArray(obj)) return obj.map(i => this.normalizeGridfsUrls(i)) as unknown as T;
+    if (obj && typeof obj === 'object') {
+      const result: Record<string, unknown> = {};
+      for (const k in obj) result[k] = this.normalizeGridfsUrls((obj as Record<string, unknown>)[k]);
+      return result as T;
+    }
+    return obj;
+  }
 }
+

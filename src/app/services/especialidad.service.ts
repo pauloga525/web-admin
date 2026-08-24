@@ -1,93 +1,61 @@
 /**
  * @file especialidad.service.ts
- * @description Servicio centralizado para la gestión de especialidades académicas.
- * Maneja la persistencia en localStorage y expone un observable reactivo.
+ * @description Servicio de especialidades conectado al backend NestJS.
+ * Mantiene la misma API pública que la versión localStorage para
+ * minimizar cambios en los componentes existentes.
  */
-
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import { Especialidad } from '../models';
-
-/** Datos iniciales usados cuando no hay nada en localStorage. */
-const ESPECIALIDADES_INICIALES: Especialidad[] = [
-  { id: 1, icono: 'ciencias',     titulo: 'Ciencias',                                     descripcion: 'Física, Química, Biología y Matemáticas',          coordinador: 'Dr. Juan Pérez',       color: 'purple'  },
-  { id: 2, icono: 'informatica',  titulo: 'Informática',                                  descripcion: 'Sistemas y Tecnología de la Información (TIC)',     coordinador: 'Ing. Mateo Pesantez',  color: 'blue'    },
-  { id: 3, icono: 'mecatronica',  titulo: 'Mecatrónica',                                  descripcion: 'Mecánica, Electrónica e Informática',               coordinador: 'Ing. Rodney Siguenza', color: 'emerald' },
-  { id: 4, icono: 'mecanizado',   titulo: 'Mecanizado y Construcciones Metálicas',        descripcion: 'Manufactura y CNC',                                 coordinador: 'Ing. Oswaldo Zumba',   color: 'orange'  },
-  { id: 5, icono: 'automotriz',   titulo: 'Electromecánica Automotriz',                   descripcion: 'Sistemas Eléctricos y Mecánicos de Vehículos',      coordinador: 'Ing. Rene Urgilés',    color: 'red'     },
-  { id: 6, icono: 'electricidad', titulo: 'Instalaciones, Equipos y Máquinas Eléctricas', descripcion: 'Generación y Distribución de Energía Eléctrica',   coordinador: 'Dr. Juan Pérez',       color: 'yellow'  },
-];
-
-const STORAGE_KEY        = 'especialidades';
-const COLORES_DISPONIBLES = ['purple','blue','emerald','orange','red','yellow','cyan','pink','teal'];
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { Especialidad, CreateEspecialidadDto } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class EspecialidadService {
+  private readonly apiUrl = `${environment.apiUrl}/especialidades`;
 
-  private subject = new BehaviorSubject<Especialidad[]>(this.cargar());
+  private subject = new BehaviorSubject<Especialidad[]>([]);
 
-  /** Observable con la lista actualizada de especialidades. */
+  /** Observable reactivo — los componentes se suscriben igual que antes. */
   especialidades$ = this.subject.asObservable();
 
-  // ─── Persistencia ───────────────────────────────────────────────────────────
-
-  /** Carga las especialidades desde localStorage o usa los datos iniciales. */
-  private cargar(): Especialidad[] {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : ESPECIALIDADES_INICIALES;
+  constructor(private http: HttpClient) {
+    this.cargarTodas();
   }
 
-  /** Persiste la lista actual en localStorage y notifica a los suscriptores. */
-  private guardarYEmitir(lista: Especialidad[]): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
-    this.subject.next(lista);
+  // ─── Carga ────────────────────────────────────────────────────────────────
+
+  cargarTodas(): void {
+    this.http.get<Especialidad[]>(this.apiUrl).subscribe({
+      next:  lista => this.subject.next(lista),
+      error: err   => console.error('[EspecialidadService] Error al cargar:', err),
+    });
   }
 
-  // ─── Consultas ──────────────────────────────────────────────────────────────
+  // ─── Consultas ────────────────────────────────────────────────────────────
 
-  /** Retorna el snapshot actual de la lista. */
+  /** Snapshot sincrónico (para código que no usa async). */
   getAll(): Especialidad[] {
     return this.subject.value;
   }
 
-  /** Busca una especialidad por id. Retorna copia para evitar mutaciones. */
-  getById(id: number | string): Especialidad | undefined {
-    const found = this.subject.value.find(e => e.id == id);
-    return found ? JSON.parse(JSON.stringify(found)) : undefined;
+  /** Busca por _id. Retorna copia para evitar mutaciones. */
+  getById(id: string): Observable<Especialidad> {
+    return this.http.get<Especialidad>(`${this.apiUrl}/${id}`);
   }
 
-  // ─── Mutaciones ─────────────────────────────────────────────────────────────
+  // ─── Mutaciones ───────────────────────────────────────────────────────────
 
-  /** Agrega una nueva especialidad asignando id y color automáticamente. */
-  agregar(datos: Omit<Especialidad, 'id' | 'color'>): Especialidad {
-    const lista = this.getAll();
-    const nueva: Especialidad = {
-      ...datos,
-      id: Date.now(),
-      color: this.obtenerColorDisponible(lista),
-    };
-    this.guardarYEmitir([...lista, nueva]);
-    return nueva;
+  agregar(datos: CreateEspecialidadDto): Observable<Especialidad> {
+    return this.http.post<Especialidad>(this.apiUrl, datos);
   }
 
-  /** Actualiza una especialidad existente por id. */
-  actualizar(especialidad: Especialidad): void {
-    const lista = this.getAll().map(e =>
-      e.id === especialidad.id ? especialidad : e
-    );
-    this.guardarYEmitir(lista);
+  actualizar(especialidad: Especialidad): Observable<Especialidad> {
+    const { _id, createdAt, updatedAt, ...body } = especialidad;
+    return this.http.put<Especialidad>(`${this.apiUrl}/${_id}`, body);
   }
 
-  /** Elimina una especialidad por id. */
-  eliminar(id: number): void {
-    this.guardarYEmitir(this.getAll().filter(e => e.id !== id));
-  }
-
-  // ─── Utilidades ─────────────────────────────────────────────────────────────
-
-  /** Devuelve el primer color no usado en la lista actual. */
-  private obtenerColorDisponible(lista: Especialidad[]): string {
-    const usados = lista.map(e => e.color);
-    return COLORES_DISPONIBLES.find(c => !usados.includes(c)) ?? 'gray';
+  eliminar(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

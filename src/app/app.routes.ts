@@ -67,4 +67,22 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/notificaciones/notificaciones').then(m => m.Notificaciones),
     data: { breadcrumb: 'Notificaciones' }
   },
+  {
+    path: 'gestion-estudiantes',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/gestion-estudiantes/gestion-estudiantes').then(m => m.GestionEstudiantes),
+    data: { breadcrumb: 'Gestión de Estudiantes' }
+  },
+  {
+    path: 'portada-noticias',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/portada-noticias/portada-noticias').then(m => m.PortadaNoticias),
+    data: { breadcrumb: 'Portada Noticias' }
+  },
+  {
+    path: 'portada-autoridades',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/portada-autoridades/portada-autoridades').then(m => m.PortadaAutoridades),
+    data: { breadcrumb: 'Portada Autoridades' }
+  },
 ];

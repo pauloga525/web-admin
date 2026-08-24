@@ -2,13 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UniformesService, UniformesConfig, Uniforme, UniformeImagen } from '../../services/uniformes.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
 type Tab = 'hero' | 'uniformes';
 
 @Component({
   selector: 'app-uniformes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
   template: `
 <div class="p-8 max-w-5xl mx-auto w-full space-y-6">
 
@@ -47,8 +48,7 @@ type Tab = 'hero' | 'uniformes';
             <input [(ngModel)]="config.heroTitulo" (ngModelChange)="onChange()" class="input-field" /></div>
           <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descripción</label>
             <textarea [(ngModel)]="config.heroDescripcion" (ngModelChange)="onChange()" rows="2" class="input-field resize-none"></textarea></div>
-          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL imagen de fondo</label>
-            <input [(ngModel)]="config.heroImagen" (ngModelChange)="onChange()" placeholder="https://..." class="input-field" /></div>
+          <app-image-url-input label="Imagen de fondo" [(ngModel)]="config.heroImagen" (ngModelChange)="onChange()" placeholder="https://..." previewHeight="h-40" />
         </div>
 
         <hr class="border-slate-100 dark:border-slate-800" />
@@ -188,7 +188,7 @@ type Tab = 'hero' | 'uniformes';
                     </div>
                     <!-- Campos -->
                     <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
-                      <input [(ngModel)]="img.url" (ngModelChange)="onChange()" placeholder="URL de la imagen" class="input-field text-xs" />
+                      <app-image-url-input class="min-w-0" [(ngModel)]="img.url" (ngModelChange)="onChange()" placeholder="URL de la imagen" [showPreview]="false" />
                       <input [(ngModel)]="img.alt" (ngModelChange)="onChange()" placeholder="Descripción (ej: Vista frontal)" class="input-field text-xs" />
                     </div>
                     <!-- Eliminar -->

@@ -1,3 +1,28 @@
+@if (cargando && !especialidad) {
+  <div class="flex items-center justify-center min-h-[60vh]">
+    <div class="flex flex-col items-center gap-3 text-slate-400 dark:text-slate-500">
+      <svg class="w-8 h-8 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      </svg>
+      <span class="text-sm">Cargando especialidad...</span>
+    </div>
+  </div>
+}
+
+@if (errorCarga && !especialidad) {
+  <div class="max-w-lg mx-auto mt-20 text-center px-6">
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 space-y-4">
+      <svg class="w-10 h-10 text-red-500 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <p class="text-sm text-red-700 dark:text-red-300 font-medium">{{errorCarga}}</p>
+      <button (click)="volver()" class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 transition">
+        Volver a la lista
+      </button>
+    </div>
+  </div>
+}
+
 @if (especialidad) {
 <div class="max-w-7xl mx-auto w-full px-6 py-10">
 <div class="grid grid-cols-12 gap-8">
@@ -90,11 +115,11 @@
           </div>
           <div>
             <label class="label">Duración</label>
-            <div class="input bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-default select-none">3 años</div>
+            <input [(ngModel)]="especialidad.duracion" (ngModelChange)="onCambio()" placeholder="Ej: 3 años" class="input" />
           </div>
           <div>
             <label class="label">Nivel</label>
-            <div class="input bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-default select-none">Bachillerato</div>
+            <input [(ngModel)]="especialidad.nivel" (ngModelChange)="onCambio()" placeholder="Ej: Bachillerato" class="input" />
           </div>
         </div>
       </section>
@@ -232,43 +257,30 @@
       <section class="space-y-3">
         <div>
           <h3 class="text-base font-bold text-slate-900 dark:text-white">Imagen principal · Hero</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Fondo del hero en la página pública.</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Fondo alternativo del hero (se usa solo si no hay imagen secundaria).</p>
         </div>
-        <input [(ngModel)]="especialidad.imagenHero" (ngModelChange)="onCambio()" placeholder="https://..." class="input" />
-        @if (especialidad.imagenHero) {
-          <div class="relative rounded-xl overflow-hidden aspect-video bg-slate-100 dark:bg-slate-800">
-            <img [src]="especialidad.imagenHero" alt="Hero" class="w-full h-full object-cover" />
-            <button type="button" (click)="especialidad.imagenHero = ''; onCambio()"
-              class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-700 transition">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-        } @else {
-          <div class="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 aspect-video flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500">
-            <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <span class="text-sm">Sin imagen — ingresa una URL arriba</span>
-          </div>
-        }
+        <app-image-url-input
+          [(ngModel)]="especialidad.imagenHero"
+          (ngModelChange)="onCambio()"
+          placeholder="https://..."
+          previewHeight="aspect-video h-auto"
+          alt="Imagen hero" />
       </section>
 
       <hr class="border-slate-100 dark:border-slate-800" />
 
-      <!-- IMAGEN SECUNDARIA -->
+      <!-- IMAGEN SECUNDARIA (BANNER PRINCIPAL) -->
       <section class="space-y-3">
         <div>
-          <h3 class="text-base font-bold text-slate-900 dark:text-white">Imagen secundaria</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Imagen de apoyo opcional (sección de contenido).</p>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Imagen secundaria <span class="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-1">Banner principal</span></h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Esta imagen se usa como fondo del banner hero en la página pública. Tiene prioridad sobre la imagen principal.</p>
         </div>
-        <input [(ngModel)]="especialidad.imagenSecundaria" (ngModelChange)="onCambio()" placeholder="https://..." class="input" />
-        @if (especialidad.imagenSecundaria) {
-          <div class="relative rounded-xl overflow-hidden h-48 bg-slate-100 dark:bg-slate-800">
-            <img [src]="especialidad.imagenSecundaria" alt="Secundaria" class="w-full h-full object-cover" />
-            <button type="button" (click)="especialidad.imagenSecundaria = ''; onCambio()"
-              class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-700 transition">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-        }
+        <app-image-url-input
+          [(ngModel)]="especialidad.imagenSecundaria"
+          (ngModelChange)="onCambio()"
+          placeholder="https://..."
+          previewHeight="h-48"
+          alt="Imagen secundaria" />
       </section>
 
       <hr class="border-slate-100 dark:border-slate-800" />
@@ -277,17 +289,21 @@
       <section class="space-y-3">
         <div>
           <h3 class="text-base font-bold text-slate-900 dark:text-white">Video de presentación</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">URL de YouTube o Vimeo (embed).</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Pega cualquier URL de YouTube (watch o embed). Se convierte automáticamente.</p>
         </div>
-        <input [(ngModel)]="especialidad.videoUrl" (ngModelChange)="onCambio()" placeholder="https://www.youtube.com/embed/..." class="input" />
+        <input [(ngModel)]="especialidad.videoUrl" (ngModelChange)="onCambio()" (blur)="normalizarVideoUrl()"
+               placeholder="https://www.youtube.com/watch?v=... o https://youtu.be/..." class="input" />
         @if (especialidad.videoUrl) {
+          <div class="text-xs text-slate-500 dark:text-slate-400 font-mono break-all">
+            Preview: {{ toEmbedUrl(especialidad.videoUrl) }}
+          </div>
           <div class="relative rounded-xl overflow-hidden aspect-video bg-slate-100 dark:bg-slate-800">
-            <iframe [src]="especialidad.videoUrl | safeUrl" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+            <iframe [src]="toEmbedUrl(especialidad.videoUrl) | safeUrl" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
           </div>
         } @else {
           <div class="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 aspect-video flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500">
             <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-            <span class="text-sm">Sin video — ingresa una URL de embed arriba</span>
+            <span class="text-sm">Sin video — ingresa una URL de YouTube arriba</span>
           </div>
         }
       </section>
@@ -324,7 +340,11 @@
               </div>
             }
             <div class="p-3 space-y-2">
-              <input [(ngModel)]="img.url" (ngModelChange)="onCambio()" placeholder="URL de la imagen" class="input text-sm" />
+              <app-image-url-input
+                [(ngModel)]="img.url"
+                (ngModelChange)="onCambio()"
+                placeholder="URL de la imagen"
+                [showPreview]="false" />
               <div class="flex items-center gap-2">
                 <input [(ngModel)]="img.titulo" (ngModelChange)="onCambio()" placeholder="Título" class="input text-sm flex-1" />
                 <button type="button" (click)="eliminarInstalacion(img.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
@@ -626,14 +646,6 @@
           </svg>
           Guardar Cambios
         </button>
-        <button (click)="pedirEliminar()"
-          class="w-full border border-slate-200 dark:border-slate-700 h-10 rounded-lg text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition text-sm font-medium flex items-center justify-center gap-2">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-            <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-          </svg>
-          Eliminar
-        </button>
       </div>
     </div>
 
@@ -695,32 +707,3 @@
 </div><!-- /max-w -->
 }
 
-<!-- MODAL CONFIRMAR ELIMINACIÓN -->
-@if (confirmarEliminar) {
-<div class="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
-  <div class="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-80 p-6 space-y-4">
-    <div class="flex items-center gap-3">
-      <div class="size-10 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
-        <svg class="w-5 h-5 text-red-600 dark:text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-          <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-        </svg>
-      </div>
-      <div>
-        <p class="text-sm font-semibold text-slate-800 dark:text-white">Eliminar especialidad</p>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Esta acción no se puede deshacer</p>
-      </div>
-    </div>
-    <div class="flex justify-end gap-3 pt-2">
-      <button (click)="cancelarEliminar()"
-        class="px-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-        Cancelar
-      </button>
-      <button (click)="confirmarEliminarEspecialidad()"
-        class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 transition">
-        Eliminar
-      </button>
-    </div>
-  </div>
-</div>
-}

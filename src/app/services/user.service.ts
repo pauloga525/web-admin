@@ -1,70 +1,83 @@
-/**
- * @file user.service.ts
- * @description Gestiona el perfil del administrador y sus credenciales.
- * Persiste en localStorage. Es la fuente de verdad para login y configuración.
- */
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export interface UserProfile {
-  nombre:    string;
-  apellido:  string;
-  username:  string;
-  email:     string;
-  cargo:     string;
-  avatar:    string;   // URL o base64
-  password:  string;
+  nombre:   string;
+  apellido: string;
+  username: string;
+  email:    string;
+  cargo:    string;
+  avatar:   string;
+  password: string; // Nunca se popula desde el backend
 }
 
-const KEY = 'edu_user_profile';
-
 const DEFAULT: UserProfile = {
-  nombre:   'Admin',
+  nombre:   '',
   apellido: '',
-  username: 'admin',
-  email:    'admin@uets.edu.ec',
-  cargo:    'Administrador',
+  username: '',
+  email:    '',
+  cargo:    '',
   avatar:   '',
-  password: 'admin',
+  password: '',
 };
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
 
-  private subject = new BehaviorSubject<UserProfile>(this.cargar());
+  private subject = new BehaviorSubject<UserProfile>({ ...DEFAULT });
   profile$ = this.subject.asObservable();
 
-  private cargar(): UserProfile {
-    const raw = localStorage.getItem(KEY);
-    return raw ? { ...DEFAULT, ...JSON.parse(raw) } : { ...DEFAULT };
+  constructor(private auth: AuthService, private http: HttpClient) {
+    this.auth.user$.subscribe(user => {
+      if (user) {
+        this.subject.next({
+          nombre:   user.nombre   ?? '',
+          apellido: user.apellido ?? '',
+          username: user.username ?? '',
+          email:    user.email    ?? '',
+          cargo:    user.cargo    ?? '',
+          avatar:   user.avatar   ?? '',
+          password: '',
+        });
+      } else {
+        this.subject.next({ ...DEFAULT });
+      }
+    });
   }
 
   get(): UserProfile { return this.subject.value; }
 
+  /** Guarda el perfil en el backend y actualiza el estado local. */
   guardar(p: UserProfile): void {
-    localStorage.setItem(KEY, JSON.stringify(p));
-    this.subject.next({ ...p });
+    this.subject.next({ ...p, password: '' });
+    const user = this.auth.getCurrentUser();
+    if (!user?._id) return;
+    this.http.put(`${environment.apiUrl}/users/${user._id}`, {
+      nombre:   p.nombre,
+      apellido: p.apellido,
+      cargo:    p.cargo,
+      avatar:   p.avatar,
+    }).pipe(
+      catchError(() => of(null))
+    ).subscribe(() => this.auth.refreshProfile().pipe(catchError(() => of(null))).subscribe());
   }
 
   getCopia(): UserProfile { return { ...this.subject.value }; }
 
-  /** Iniciales para el avatar de texto. */
   getIniciales(): string {
     const p = this.subject.value;
-    const a = (p.nombre?.[0] ?? '').toUpperCase();
+    const a = (p.nombre?.[0]  ?? '').toUpperCase();
     const b = (p.apellido?.[0] ?? '').toUpperCase();
     return b ? a + b : a || 'A';
   }
 
-  /** Nombre completo. */
   getNombreCompleto(): string {
     const p = this.subject.value;
     return [p.nombre, p.apellido].filter(Boolean).join(' ');
-  }
-
-  /** Verifica credenciales (usado por AuthService). */
-  verificar(username: string, password: string): boolean {
-    const p = this.subject.value;
-    return p.username === username && p.password === password;
   }
 }

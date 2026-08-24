@@ -1,12 +1,8 @@
-/**
- * @file nivel-editor.ts
- * @description Editor reutilizable para los 4 niveles académicos.
- * Recibe el nivelId como @Input y gestiona todo el contenido editable.
- */
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NivelService } from '../../services/nivel.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 import {
   NivelConfig, NivelKeyFact,
   NivelCurriculumHighlight, NivelSubject,
@@ -17,7 +13,7 @@ type Tab = 'hero' | 'overview' | 'curriculum' | 'environment' | 'cta';
 @Component({
   selector: 'app-nivel-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
   templateUrl: './nivel-editor.html',
 })
 export class NivelEditor implements OnInit {
@@ -27,7 +23,9 @@ export class NivelEditor implements OnInit {
 
   config!: NivelConfig;
   tabActiva: Tab = 'hero';
+  cargando = true;
   guardado = false;
+  guardando = false;
   private guardadoTimer: ReturnType<typeof setTimeout> | null = null;
 
   tabs: { id: Tab; label: string }[] = [
@@ -41,16 +39,25 @@ export class NivelEditor implements OnInit {
   constructor(private nivelService: NivelService) {}
 
   ngOnInit(): void {
-    this.config = this.nivelService.getCopia(this.nivelId);
+    this.nivelService.get(this.nivelId).subscribe(config => {
+      this.config = JSON.parse(JSON.stringify(config));
+      this.cargando = false;
+    });
   }
 
   onChange(): void { this.guardado = false; }
 
   guardar(): void {
-    this.nivelService.guardar(this.config);
-    this.guardado = true;
-    if (this.guardadoTimer) clearTimeout(this.guardadoTimer);
-    this.guardadoTimer = setTimeout(() => this.guardado = false, 3000);
+    this.guardando = true;
+    this.nivelService.guardar(this.config).subscribe({
+      next: () => {
+        this.guardando = false;
+        this.guardado = true;
+        if (this.guardadoTimer) clearTimeout(this.guardadoTimer);
+        this.guardadoTimer = setTimeout(() => this.guardado = false, 3000);
+      },
+      error: () => { this.guardando = false; },
+    });
   }
 
   trackById(_i: number, item: { id: number }): number { return item.id; }

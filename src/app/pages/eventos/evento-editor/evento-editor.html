@@ -96,21 +96,12 @@
           <h3 class="text-base font-bold text-slate-900 dark:text-white">Imagen principal</h3>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Banner del evento en la página pública.</p>
         </div>
-        <input [(ngModel)]="evento.imagenPrincipal" (ngModelChange)="onCambio()" placeholder="https://..." class="input" />
-        @if (evento.imagenPrincipal) {
-          <div class="relative rounded-xl overflow-hidden aspect-video bg-slate-100 dark:bg-slate-800">
-            <img [src]="evento.imagenPrincipal" alt="Principal" class="w-full h-full object-cover" />
-            <button type="button" (click)="evento.imagenPrincipal = ''; onCambio()"
-              class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-700 transition">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-        } @else {
-          <div class="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 aspect-video flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500">
-            <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <span class="text-sm">Sin imagen — ingresa una URL arriba</span>
-          </div>
-        }
+        <app-image-url-input
+          [(ngModel)]="evento.imagenPrincipal"
+          (ngModelChange)="onCambio()"
+          placeholder="https://..."
+          previewHeight="aspect-video h-auto"
+          alt="Imagen principal del evento" />
       </section>
 
       <hr class="border-slate-100 dark:border-slate-800" />
@@ -120,7 +111,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h3 class="text-base font-bold text-slate-900 dark:text-white">Galería adicional</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Imágenes complementarias del evento.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Imágenes complementarias del evento (se guardan como Base64).</p>
           </div>
           <button type="button" (click)="agregarImagen()" class="btn-primary text-sm">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
@@ -137,11 +128,30 @@
               <div class="relative rounded-lg overflow-hidden aspect-video bg-slate-100 dark:bg-slate-800">
                 <img [src]="url" class="w-full h-full object-cover" />
               </div>
+            } @else {
+              <div class="rounded-lg aspect-video bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
+                Sin imagen
+              </div>
             }
-            <div class="flex gap-2">
-              <input [ngModel]="url" (ngModelChange)="evento!.galeria![$index] = $event; onCambio()"
-                placeholder="https://..." class="input flex-1 text-sm" />
-              <button type="button" (click)="eliminarImagen($index)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
+            <div class="flex gap-2 items-start">
+              <label class="flex-1 flex items-center justify-center px-3 py-2 text-xs font-semibold border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer">
+                <svg class="w-3.5 h-3.5 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                {{ cargandoImagen ? 'Cargando...' : 'Cargar' }}
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  hidden
+                  [disabled]="cargandoImagen"
+                  (change)="procesarArchivoImagen($event, $index)" />
+              </label>
+              <button 
+                type="button" 
+                (click)="evento!.galeria![$index] = ''; onCambio()"
+                class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>

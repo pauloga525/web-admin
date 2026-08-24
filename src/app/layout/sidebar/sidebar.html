@@ -8,7 +8,7 @@
      [class.justify-center]="collapsed"
      [class.gap-3]="!collapsed">
   <div class="w-9 h-9 bg-white rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-slate-100 dark:border-slate-800">
-    <img src="logo.png" alt="Logo UETS" class="w-full h-full object-cover" style="mix-blend-mode: multiply;" />
+    <img src="logo.png" alt="Logo UETS" class="w-full h-full object-contain" style="mix-blend-mode: screen;" />
   </div>
   @if (!collapsed) {
   <div class="flex flex-col min-w-0 overflow-hidden">
@@ -146,6 +146,16 @@
         @if(!collapsed){<div class="flex flex-col whitespace-nowrap"><h1>Noticias</h1></div>}
       </a>
 
+      <a routerLink="/portada-noticias" routerLinkActive="sidebar-item-active [&>svg]:text-white"
+         class="sidebar-item group" data-tooltip="Portada Noticias"
+         (mouseenter)="showTooltip($event, 'Portada Noticias')" (mouseleave)="hideTooltip()">
+        <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="5" rx="1"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 11h18M3 15h10M3 19h8"/>
+        </svg>
+        @if(!collapsed){<div class="flex flex-col whitespace-nowrap"><h1>Portada Noticias</h1></div>}
+      </a>
+
       <a routerLink="/contacto" routerLinkActive="sidebar-item-active [&>svg]:text-white"
          class="sidebar-item group" data-tooltip="Contacto"
          (mouseenter)="showTooltip($event, 'Contacto')" (mouseleave)="hideTooltip()">
@@ -186,6 +196,16 @@
         @if(!collapsed){<div class="flex flex-col whitespace-nowrap"><h1>Autoridades</h1></div>}
       </a>
 
+      <a routerLink="/portada-autoridades" routerLinkActive="sidebar-item-active [&>svg]:text-white"
+         class="sidebar-item group" data-tooltip="Portada Autoridades"
+         (mouseenter)="showTooltip($event, 'Portada Autoridades')" (mouseleave)="hideTooltip()">
+        <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="5" rx="1"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 11h18M7 15h10M9 19h6"/>
+        </svg>
+        @if(!collapsed){<div class="flex flex-col whitespace-nowrap"><h1>Portada Autoridades</h1></div>}
+      </a>
+
       <a routerLink="/eventos" routerLinkActive="sidebar-item-active [&>svg]:text-white"
          class="sidebar-item group" data-tooltip="Eventos"
          (mouseenter)="showTooltip($event, 'Eventos')" (mouseleave)="hideTooltip()">
@@ -224,6 +244,17 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M14 20c1-2 2.5-3.5 4.5-4"/>
         </svg>
         @if(!collapsed){<div class="flex flex-col whitespace-nowrap"><h1>Alumnos</h1></div>}
+      </a>
+
+      <a routerLink="/gestion-estudiantes" routerLinkActive="sidebar-item-active [&>svg]:text-white"
+         class="sidebar-item group" data-tooltip="Gestión Estudiantes"
+         (mouseenter)="showTooltip($event, 'Gestión Estudiantes')" (mouseleave)="hideTooltip()">
+        <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+          <rect x="9" y="3" width="6" height="4" rx="1"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6M9 16h4"/>
+        </svg>
+        @if(!collapsed){<div class="flex flex-col whitespace-nowrap"><h1>Gestión Estudiantes</h1></div>}
       </a>
 
       <a routerLink="/consejo-estudiantil" routerLinkActive="sidebar-item-active [&>svg]:text-white"
@@ -295,6 +326,25 @@
   <div>
     @if(!collapsed){<p class="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Administración</p>}
     <div class="space-y-1">
+
+      <a routerLink="/notificaciones" routerLinkActive="sidebar-item-active [&>svg]:text-white"
+         class="sidebar-item group" data-tooltip="Notificaciones"
+         (mouseenter)="showTooltip($event, 'Notificaciones')" (mouseleave)="hideTooltip()">
+        <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        @if(!collapsed){<div class="flex flex-col whitespace-nowrap"><h1>Notificaciones</h1></div>}
+      </a>
+
+      <a routerLink="/actividad" routerLinkActive="sidebar-item-active [&>svg]:text-white"
+         class="sidebar-item group" data-tooltip="Actividad"
+         (mouseenter)="showTooltip($event, 'Actividad')" (mouseleave)="hideTooltip()">
+        <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        @if(!collapsed){<div class="flex flex-col whitespace-nowrap"><h1>Actividad</h1></div>}
+      </a>
 
       <a routerLink="/configuracion" routerLinkActive="sidebar-item-active [&>svg]:text-white"
          class="sidebar-item group" data-tooltip="Configuración">

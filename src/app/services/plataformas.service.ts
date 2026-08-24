@@ -1,27 +1,50 @@
 import { Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
+import { ConfiguracionApiService } from './configuracion-api.service';
 
 export interface Plataforma {
   id:    number;
   name:  string;
-  image: string;  // URL del logo
-  url:   string;  // enlace externo
+  image: string;
+  url:   string;
 }
 
 const KEY = 'edu_plataformas';
 
 const DEFAULT: Plataforma[] = [
-  { id: 1, name: 'Moodle',     image: '', url: '#' },
-  { id: 2, name: 'Microsoft',  image: '', url: '#' },
-  { id: 3, name: 'Google',     image: '', url: '#' },
+  { id: 1, name: 'Moodle',    image: '', url: '' },
+  { id: 2, name: 'Microsoft', image: '', url: '' },
+  { id: 3, name: 'Google',    image: '', url: '' },
 ];
 
 @Injectable({ providedIn: 'root' })
 export class PlataformasService {
+
+  constructor(private configApi: ConfiguracionApiService) {}
+
   get(): Plataforma[] {
-    const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : DEFAULT.map(p => ({ ...p }));
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? JSON.parse(raw) : DEFAULT.map(p => ({ ...p }));
+    } catch { return DEFAULT.map(p => ({ ...p })); }
   }
+
   getCopia(): Plataforma[] { return JSON.parse(JSON.stringify(this.get())); }
-  guardar(list: Plataforma[]): void { localStorage.setItem(KEY, JSON.stringify(list)); }
+
+  guardar(list: Plataforma[]): Observable<void> {
+    return this.configApi.guardar('plataformas', list).pipe(
+      tap(() => localStorage.setItem(KEY, JSON.stringify(list))),
+      catchError(() => { localStorage.setItem(KEY, JSON.stringify(list)); return of(undefined as void); })
+    );
+  }
+
+  cargarDesdeBackend(): Observable<Plataforma[]> {
+    return this.configApi.get<Plataforma[]>('plataformas').pipe(
+      tap(list => localStorage.setItem(KEY, JSON.stringify(list))),
+      catchError(() => of(this.get()))
+    );
+  }
+
   nextId(): number { return Date.now(); }
 }

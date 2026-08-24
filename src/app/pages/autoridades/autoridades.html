@@ -1,16 +1,26 @@
 <div class="p-8 max-w-6xl mx-auto w-full space-y-6">
 
   <!-- PAGE HEADER -->
-  <div class="flex items-center gap-4">
-    <a routerLink="/nosotros"
-      class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-primary transition">
-      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-4">
+      <a routerLink="/nosotros"
+        class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-primary transition">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Nosotros
+      </a>
+      <span class="text-slate-300 dark:text-slate-700">/</span>
+      <h1 class="text-xl font-bold text-slate-800 dark:text-white">Editor de Autoridades</h1>
+    </div>
+
+    <button type="button" (click)="nueva()"
+      class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white shadow-md shadow-primary/20 transition hover:bg-primary/90">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
       </svg>
-      Nosotros
-    </a>
-    <span class="text-slate-300 dark:text-slate-700">/</span>
-    <h1 class="text-xl font-bold text-slate-800 dark:text-white">Editor de Autoridades</h1>
+      Agregar autoridad
+    </button>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -18,9 +28,9 @@
     <!-- LISTA DE AUTORIDADES -->
     <div class="lg:col-span-1 space-y-2">
       <p class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">Selecciona una autoridad</p>
-      @for (a of lista; track a.id) {
+      @for (a of lista; track a._id) {
       <button type="button" (click)="seleccionar(a)"
-        [class]="seleccionada?.id === a.id
+        [class]="seleccionada?._id === a._id
           ? 'w-full flex items-center gap-3 p-4 rounded-xl border-2 border-primary bg-primary/5 text-left transition'
           : 'w-full flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-background-dark hover:border-primary/40 text-left transition'">
         <!-- Avatar -->
@@ -37,7 +47,7 @@
           <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">{{a.name}}</p>
           <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{a.title}}</p>
         </div>
-        @if (seleccionada?.id === a.id) {
+        @if (seleccionada?._id === a._id) {
           <svg class="w-4 h-4 text-primary shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
         }
       </button>
@@ -76,19 +86,13 @@
 
           <!-- Foto -->
           <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">URL de la foto</label>
-            <div class="flex items-center gap-4">
-              <div class="w-20 h-20 rounded-xl shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                @if (seleccionada.image) {
-                  <img [src]="seleccionada.image" [alt]="seleccionada.name" class="w-full h-full object-cover" />
-                } @else {
-                  <div class="w-full h-full flex items-center justify-center text-slate-300">
-                    <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M20 21c0-3-4-5-8-5s-8 2-8 5"/></svg>
-                  </div>
-                }
-              </div>
-              <input [(ngModel)]="seleccionada.image" (ngModelChange)="onChange()" placeholder="https://..." class="flex-1 input-field" />
-            </div>
+            <app-image-url-input
+              label="Foto"
+              [(ngModel)]="seleccionada.image"
+              (ngModelChange)="onChange()"
+              placeholder="https://..."
+              previewHeight="h-40"
+              alt="Foto de autoridad" />
           </div>
 
           <!-- Datos principales -->

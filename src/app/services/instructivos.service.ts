@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 export interface InstructivoCategoria { id: number; icon: string; name: string; }
 export interface Instructivo {
@@ -33,10 +33,10 @@ const DEFAULT: InstructivosConfig = {
     { id: 4, icon: 'library_books',name: 'Biblioteca Digital'    },
   ],
   instructivos: [
-    { id: 1, title: 'Cómo acceder al Aula Virtual',        description: 'Guía paso a paso para ingresar a la plataforma Moodle y navegar por tus cursos.',          type: 'pdf',   categoria: 'Plataforma Educativa',  fecha: '2024-01-15', url: '#', buttonText: 'Descargar PDF'    },
-    { id: 2, title: 'Tutorial: Entrega de tareas en Moodle', description: 'Aprende a subir y entregar tus actividades correctamente en la plataforma virtual.',       type: 'video', categoria: 'Plataforma Educativa',  fecha: '2024-01-20', url: '#', buttonText: 'Ver Tutorial'     },
-    { id: 3, title: 'Solicitud de certificados en línea',  description: 'Proceso para solicitar certificados de matrícula y notas desde el portal estudiantil.',      type: 'pdf',   categoria: 'Trámites y Secretaría', fecha: '2024-02-01', url: '#', buttonText: 'Descargar PDF'    },
-    { id: 4, title: 'Acceso a la Biblioteca Digital',      description: 'Cómo buscar y descargar libros y artículos desde el repositorio institucional.',             type: 'video', categoria: 'Biblioteca Digital',    fecha: '2024-02-10', url: '#', buttonText: 'Ver Tutorial'     },
+    { id: 1, title: 'Cómo acceder al Aula Virtual',        description: 'Guía paso a paso para ingresar a la plataforma Moodle y navegar por tus cursos.',          type: 'pdf',   categoria: 'Plataforma Educativa',  fecha: '2024-01-15', url: '', buttonText: 'Descargar PDF'    },
+    { id: 2, title: 'Tutorial: Entrega de tareas en Moodle', description: 'Aprende a subir y entregar tus actividades correctamente en la plataforma virtual.',       type: 'video', categoria: 'Plataforma Educativa',  fecha: '2024-01-20', url: '', buttonText: 'Ver Tutorial'     },
+    { id: 3, title: 'Solicitud de certificados en línea',  description: 'Proceso para solicitar certificados de matrícula y notas desde el portal estudiantil.',      type: 'pdf',   categoria: 'Trámites y Secretaría', fecha: '2024-02-01', url: '', buttonText: 'Descargar PDF'    },
+    { id: 4, title: 'Acceso a la Biblioteca Digital',      description: 'Cómo buscar y descargar libros y artículos desde el repositorio institucional.',             type: 'video', categoria: 'Biblioteca Digital',    fecha: '2024-02-10', url: '', buttonText: 'Ver Tutorial'     },
   ],
 };
 
@@ -50,3 +50,4 @@ export class InstructivosService {
   guardar(c: InstructivosConfig): void { localStorage.setItem(KEY, JSON.stringify(c)); }
   nextId(): number { return Date.now(); }
 }
+

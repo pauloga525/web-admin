@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ContactoService, ContactoConfig, ContactoInfo, ContactoRed, ContactoAsunto } from '../../services/contacto.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
 type Tab = 'hero' | 'info' | 'redes' | 'formulario';
 
@@ -10,7 +11,7 @@ const REDES = ['facebook','twitter','instagram','linkedin','youtube','tiktok'] a
 @Component({
   selector: 'app-contacto',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
   template: `
 <div class="p-8 max-w-4xl mx-auto w-full space-y-6">
 
@@ -64,10 +65,7 @@ const REDES = ['facebook','twitter','instagram','linkedin','youtube','tiktok'] a
         <hr class="border-slate-100 dark:border-slate-800" />
         <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Mapa</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL imagen del mapa</label>
-            <input [(ngModel)]="config.mapImageUrl" (ngModelChange)="onChange()" placeholder="https://..." class="input-field" />
-          </div>
+          <app-image-url-input label="Imagen del mapa" [(ngModel)]="config.mapImageUrl" (ngModelChange)="onChange()" placeholder="https://..." previewHeight="h-32" />
           <div>
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL "Ver en Google Maps"</label>
             <input [(ngModel)]="config.mapLinkUrl" (ngModelChange)="onChange()" placeholder="https://maps.google.com/..." class="input-field" />

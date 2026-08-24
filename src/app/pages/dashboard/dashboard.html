@@ -1,45 +1,5 @@
 <div class="p-8 space-y-8 max-w-7xl mx-auto w-full">
 
-<!-- KPI CARDS -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-  @for (kpi of kpis; track kpi.id) {
-  @if (kpi.visible) {
-  <div class="bg-white dark:bg-background-dark p-5 rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col gap-1 transition-all hover:border-primary/30 group relative">
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider">{{kpi.label}}</span>
-      <button type="button" (click)="editandoKpi = editandoKpi?.id === kpi.id ? null : kpi"
-        class="opacity-0 group-hover:opacity-100 transition p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-primary">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
-      </button>
-    </div>
-    @if (editandoKpi?.id === kpi.id) {
-    <!-- Modo edición inline -->
-    <div class="space-y-2 animate-[fadeIn_.15s_ease_forwards]">
-      <input [(ngModel)]="kpi.label" placeholder="Etiqueta" class="w-full px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
-      <input [(ngModel)]="kpi.value" placeholder="Valor" class="w-full px-2 py-1 text-sm font-bold border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-primary focus:outline-none focus:ring-2 focus:ring-primary/30" />
-      <input [(ngModel)]="kpi.cambio" placeholder="Cambio (ej: +12%)" class="w-full px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-600 dark:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30" />
-      <input [(ngModel)]="kpi.apiKey" placeholder="API key (futuro)" class="w-full px-2 py-1 text-[10px] border border-dashed border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30" />
-      <div class="flex gap-2 pt-1">
-        <button type="button" (click)="guardarKpis()" class="flex-1 py-1 text-xs font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 transition">Guardar</button>
-        <button type="button" (click)="editandoKpi = null" class="flex-1 py-1 text-xs text-slate-500 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition">Cancelar</button>
-      </div>
-    </div>
-    } @else {
-    <div class="flex items-baseline gap-2">
-      <span class="text-3xl font-bold text-primary">{{kpi.value}}</span>
-      @if (kpi.cambio) {
-        <span class="text-[10px] font-bold" [class]="kpi.color">{{kpi.cambio}}</span>
-      }
-    </div>
-    <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
-      @if (kpi.apiKey) { <span class="font-mono">{{kpi.apiKey}}</span> }
-    </p>
-    }
-  </div>
-  }
-  }
-</div>
-
 <!-- EDITOR HOME + ACTIVIDAD -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -55,9 +15,13 @@
       <button type="button" (click)="guardarHome()"
         [class]="guardadoHome
           ? 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-green-500 text-white transition'
-          : 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition'">
+          : errorHome
+            ? 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-red-500 text-white transition'
+            : 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition'">
         @if (guardadoHome) {
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Guardado
+        } @else if (errorHome) {
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> {{errorHome}}
         } @else {
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar cambios
         }
@@ -87,8 +51,70 @@
         <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Hero Principal</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="md:col-span-2">
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL imagen de fondo</label>
-            <input [(ngModel)]="home.hero.imagenFondo" (ngModelChange)="onCambioHome()" placeholder="https://..." class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">Fondo del Hero (imagen)</label>
+
+            <!-- Input de archivo oculto -->
+            <input #heroFileInput type="file" accept="image/*" hidden (change)="onHeroMediaSelect($event)" />
+
+            <!-- Zona de vista previa / upload -->
+            @if (home.hero.imagenFondo) {
+              <div class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 mb-3 bg-slate-900">
+                @if (heroEsVideo) {
+                  <video [src]="heroSafeVideoUrl!" class="w-full h-44 object-cover" muted playsinline controls></video>
+                } @else {
+                  <img [src]="home.hero.imagenFondo" alt="Vista previa fondo" class="w-full h-44 object-cover" />
+                }
+                <!-- Overlay con tipo y acciones -->
+                <div class="absolute top-2 left-2">
+                  @if (heroEsVideo) {
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-black/60 text-white text-[10px] font-bold rounded-full backdrop-blur-sm">
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> VIDEO
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-black/60 text-white text-[10px] font-bold rounded-full backdrop-blur-sm">
+                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> IMAGEN
+                    </span>
+                  }
+                </div>
+                <div class="absolute top-2 right-2 flex gap-1.5">
+                  <button type="button" (click)="heroFileInput.click()" [disabled]="heroUploading"
+                    class="px-2 py-1 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 text-[10px] font-semibold rounded-lg hover:bg-white dark:hover:bg-slate-700 transition backdrop-blur-sm shadow disabled:opacity-50">
+                    {{ heroUploading ? 'Subiendo...' : 'Cambiar' }}
+                  </button>
+                  <button type="button" (click)="removeHeroMedia()"
+                    class="px-2 py-1 bg-red-500/90 text-white text-[10px] font-semibold rounded-lg hover:bg-red-600 transition backdrop-blur-sm shadow">
+                    Quitar
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <!-- Zona de carga vacía -->
+              <div (click)="heroFileInput.click()"
+                class="flex flex-col items-center justify-center gap-2 h-32 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/5 transition mb-3">
+                <svg class="w-8 h-8 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Haz clic para subir imagen</span>
+                <span class="text-[10px] text-slate-400 dark:text-slate-500">JPG, PNG, WebP (se comprimirá automáticamente)</span>
+              </div>
+            }
+
+            <!-- Botón de subir siempre visible -->
+            <div class="flex items-center gap-2">
+              <button type="button" (click)="heroFileInput.click()" [disabled]="heroUploading"
+                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition disabled:opacity-50">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                {{ heroUploading ? 'Subiendo...' : (home.hero.imagenFondo ? 'Cambiar archivo' : 'Subir archivo') }}
+              </button>
+              <span class="text-[10px] text-slate-400 dark:text-slate-500">O escribe una URL externa:</span>
+              <input [(ngModel)]="home.hero.imagenFondo" (ngModelChange)="onCambioHome()" placeholder="https://..." class="flex-1 px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+
+            <!-- Error de formato -->
+            @if (heroMediaError) {
+              <p class="mt-1.5 text-[11px] text-red-500 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {{heroMediaError}}
+              </p>
+            }
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Etiqueta superior</label>
@@ -205,7 +231,7 @@
                 </button>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input [(ngModel)]="nv.imagen" (ngModelChange)="onCambioHome()" placeholder="URL imagen" class="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="nv.imagen" (ngModelChange)="onCambioHome()" placeholder="URL imagen" [showPreview]="false" />
                 <input [(ngModel)]="nv.enlace" (ngModelChange)="onCambioHome()" placeholder="Enlace" class="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
               </div>
               <textarea [(ngModel)]="nv.descripcion" (ngModelChange)="onCambioHome()" rows="2" placeholder="Descripción" class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"></textarea>
@@ -267,7 +293,7 @@
               }
               <div class="flex-1 space-y-1.5">
                 <input [(ngModel)]="logo.nombre" (ngModelChange)="onCambioHome()" placeholder="Nombre" class="w-full px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                <input [(ngModel)]="logo.url" (ngModelChange)="onCambioHome()" placeholder="URL imagen" class="w-full px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                <app-image-url-input [(ngModel)]="logo.url" (ngModelChange)="onCambioHome()" placeholder="URL imagen" [showPreview]="false" />
               </div>
               <button type="button" (click)="eliminarLogo(logo.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
@@ -301,7 +327,7 @@
             </div>
             <div class="md:col-span-2">
               <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL imagen</label>
-              <input [(ngModel)]="home.institucional.imagen" (ngModelChange)="onCambioHome()" placeholder="https://..." class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              <app-image-url-input [(ngModel)]="home.institucional.imagen" (ngModelChange)="onCambioHome()" placeholder="https://..." previewHeight="h-40" alt="Imagen institucional" />
             </div>
             <div class="md:col-span-2">
               <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descripción</label>
@@ -340,12 +366,18 @@
           </div>
           <div class="space-y-2">
             @for (e of home.comunicacion; track trackById($index, e)) {
-            <div class="flex items-center gap-2">
-              <input [(ngModel)]="e.nombre" (ngModelChange)="onCambioHome()" placeholder="Nombre" class="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
-              <input [(ngModel)]="e.url" (ngModelChange)="onCambioHome()" placeholder="URL" class="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
-              <button type="button" (click)="eliminarComunicacion(e.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-              </button>
+            <div class="rounded-lg border border-slate-100 dark:border-slate-800 p-2 space-y-1.5">
+              <div class="flex items-center gap-2">
+                <input [(ngModel)]="e.nombre" (ngModelChange)="onCambioHome()" placeholder="Nombre" class="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                <input [(ngModel)]="e.url" (ngModelChange)="onCambioHome()" placeholder="URL del enlace" class="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                <button type="button" (click)="eliminarComunicacion(e.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] text-slate-400 shrink-0 w-12">Ícono:</span>
+                <app-image-url-input [(ngModel)]="e.imagen" (ngModelChange)="onCambioHome()" placeholder="URL o sube imagen del ícono" previewHeight="h-8" alt="Ícono" class="flex-1" />
+              </div>
             </div>
             }
             @if (!home.comunicacion.length) {
@@ -415,12 +447,18 @@
           </div>
           <div class="space-y-2">
             @for (e of home.enlacesInteres; track trackById($index, e)) {
-            <div class="flex items-center gap-2">
-              <input [(ngModel)]="e.nombre" (ngModelChange)="onCambioHome()" placeholder="Nombre" class="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
-              <input [(ngModel)]="e.url" (ngModelChange)="onCambioHome()" placeholder="URL" class="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
-              <button type="button" (click)="eliminarEnlaceInteres(e.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-              </button>
+            <div class="rounded-lg border border-slate-100 dark:border-slate-800 p-2 space-y-1.5">
+              <div class="flex items-center gap-2">
+                <input [(ngModel)]="e.nombre" (ngModelChange)="onCambioHome()" placeholder="Nombre" class="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                <input [(ngModel)]="e.url" (ngModelChange)="onCambioHome()" placeholder="URL del enlace" class="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                <button type="button" (click)="eliminarEnlaceInteres(e.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] text-slate-400 shrink-0 w-12">Ícono:</span>
+                <app-image-url-input [(ngModel)]="e.imagen" (ngModelChange)="onCambioHome()" placeholder="URL o sube imagen del ícono" previewHeight="h-8" alt="Ícono" class="flex-1" />
+              </div>
             </div>
             }
             @if (!home.enlacesInteres.length) {

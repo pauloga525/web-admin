@@ -84,7 +84,8 @@ export interface Publicacion {
 /** Representa una especialidad académica del instituto (modelo completo). */
 export interface Especialidad {
   // ── Identificación ──────────────────────────────────────────────────────────
-  id: number;
+  _id?: string;   // MongoDB ObjectId (fuente de verdad)
+  id?: number;    // Legado — preferir _id
   icono: string;
   color: string;
   codigo?: string;
@@ -263,6 +264,8 @@ export interface HomeBoton {
 /** Hero principal del home. */
 export interface HomeHero {
   imagenFondo: string;
+  /** 'image' | 'video' — distingue cómo renderizar el fondo en el sitio público. */
+  mediaType?: 'image' | 'video';
   etiqueta: string;
   titulo: string;
   textoDestacado: string;
@@ -328,6 +331,7 @@ export interface HomeEnlace {
   id: number;
   nombre: string;
   url: string;
+  imagen?: string;
 }
 
 /** Sección de admisiones del home. */

@@ -1,126 +1,53 @@
 /**
  * @file autoridades.service.ts
- * @description Gestiona los perfiles de las 5 autoridades académicas.
+ * @description Servicio de autoridades conectado al backend NestJS.
+ * Reemplaza la versión basada en localStorage.
  */
 import { Injectable } from '@angular/core';
-
-export interface Autoridad {
-  id: number;
-  name:           string;
-  title:          string;   // cargo completo
-  categoryLabel:  string;   // etiqueta del badge
-  image:          string;   // URL foto
-  email:          string;
-  specialization: string;
-  linkedin:       string;
-  fullBio:        string;   // biografía completa (párrafos separados por \n\n)
-  // Tarjetas de contacto
-  ubicacion:      string;
-  horario:        string;
-  telefono:       string;
-}
-
-const KEY = 'edu_autoridades';
-
-const DEFAULT: Autoridad[] = [
-  {
-    id: 1,
-    name:           'Nombre Autoridad 1',
-    title:          'Rector',
-    categoryLabel:  'Rectorado',
-    image:          '',
-    email:          'rector@uets.edu.ec',
-    specialization: '',
-    linkedin:       '',
-    fullBio:        'Biografía de la autoridad. Escribe aquí la trayectoria académica y profesional.\n\nPuedes agregar más párrafos separando con una línea en blanco.',
-    ubicacion:      'Campus Principal UETS',
-    horario:        'Lunes a Viernes 8:00 - 17:00',
-    telefono:       '+593 7 000 0000',
-  },
-  {
-    id: 2,
-    name:           'Nombre Autoridad 2',
-    title:          'Vicerrector Académico',
-    categoryLabel:  'Vicerrectorado',
-    image:          '',
-    email:          'vicerrector@uets.edu.ec',
-    specialization: '',
-    linkedin:       '',
-    fullBio:        'Biografía de la autoridad.',
-    ubicacion:      'Campus Principal UETS',
-    horario:        'Lunes a Viernes 8:00 - 17:00',
-    telefono:       '+593 7 000 0001',
-  },
-  {
-    id: 3,
-    name:           'Nombre Autoridad 3',
-    title:          'Inspector General',
-    categoryLabel:  'Inspección',
-    image:          '',
-    email:          'inspector@uets.edu.ec',
-    specialization: '',
-    linkedin:       '',
-    fullBio:        'Biografía de la autoridad.',
-    ubicacion:      'Campus Principal UETS',
-    horario:        'Lunes a Viernes 8:00 - 17:00',
-    telefono:       '+593 7 000 0002',
-  },
-  {
-    id: 4,
-    name:           'Nombre Autoridad 4',
-    title:          'Coordinador Académico',
-    categoryLabel:  'Coordinación',
-    image:          '',
-    email:          'coordinador@uets.edu.ec',
-    specialization: '',
-    linkedin:       '',
-    fullBio:        'Biografía de la autoridad.',
-    ubicacion:      'Campus Principal UETS',
-    horario:        'Lunes a Viernes 8:00 - 17:00',
-    telefono:       '+593 7 000 0003',
-  },
-  {
-    id: 5,
-    name:           'Nombre Autoridad 5',
-    title:          'Secretaria General',
-    categoryLabel:  'Secretaría',
-    image:          '',
-    email:          'secretaria@uets.edu.ec',
-    specialization: '',
-    linkedin:       '',
-    fullBio:        'Biografía de la autoridad.',
-    ubicacion:      'Campus Principal UETS',
-    horario:        'Lunes a Viernes 8:00 - 17:00',
-    telefono:       '+593 7 000 0004',
-  },
-];
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { Autoridad, CreateAutoridadDto } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class AutoridadesService {
+  private readonly apiUrl = `${environment.apiUrl}/autoridades`;
 
-  private cargar(): Autoridad[] {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return DEFAULT.map(a => ({ ...a }));
-    const saved: Autoridad[] = JSON.parse(raw);
-    // Merge con defaults para garantizar que todos los campos existan
-    return DEFAULT.map(def => ({ ...def, ...(saved.find(s => s.id === def.id) ?? {}) }));
+  private subject = new BehaviorSubject<Autoridad[]>([]);
+  autoridades$ = this.subject.asObservable();
+
+  constructor(private http: HttpClient) {
+    this.cargarTodas();
   }
 
-  getAll(): Autoridad[] { return this.cargar(); }
-
-  getById(id: number): Autoridad | undefined {
-    return this.cargar().find(a => a.id === id);
+  cargarTodas(): void {
+    this.http.get<Autoridad[]>(this.apiUrl).subscribe({
+      next:  lista => this.subject.next(lista),
+      error: err   => console.error('[AutoridadesService] Error al cargar:', err),
+    });
   }
 
-  getCopiaById(id: number): Autoridad | undefined {
-    const a = this.getById(id);
-    return a ? { ...a } : undefined;
+  getAll(): Autoridad[] { return this.subject.value; }
+
+  getById(id: string): Observable<Autoridad> {
+    return this.http.get<Autoridad>(`${this.apiUrl}/${id}`);
   }
 
-  guardar(autoridad: Autoridad): void {
-    const lista = this.cargar();
-    const idx = lista.findIndex(a => a.id === autoridad.id);
-    if (idx !== -1) lista[idx] = autoridad;
-    localStorage.setItem(KEY, JSON.stringify(lista));
+  crear(dto: CreateAutoridadDto): Observable<Autoridad> {
+    return this.http.post<Autoridad>(this.apiUrl, dto).pipe(
+      tap(() => this.cargarTodas())
+    );
+  }
+
+  actualizar(id: string, dto: Partial<CreateAutoridadDto>): Observable<Autoridad> {
+    return this.http.put<Autoridad>(`${this.apiUrl}/${id}`, dto).pipe(
+      tap(() => this.cargarTodas())
+    );
+  }
+
+  eliminar(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      tap(() => this.cargarTodas())
+    );
   }
 }

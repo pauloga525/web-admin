@@ -1,61 +1,83 @@
 /**
  * @file auth.service.ts
- * @description Servicio de autenticación con cierre de sesión por inactividad.
- * - Sesión activa: sessionStorage flag + localStorage timestamp.
- * - Expiración: 10 min sin actividad (gestionado por InactivityService).
+ * @description Autenticación contra el backend NestJS con JWT.
+ * Reemplaza la lógica anterior basada en localStorage/sessionStorage.
  */
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { UserService } from './user.service';
-import { InactivityService } from './inactivity.service';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { AppUser, LoginResponse } from '../models/api.models';
 
-const SESSION_KEY = 'edu_auth';
+const TOKEN_KEY = 'uets_token';
+const USER_KEY  = 'uets_user';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly apiUrl = `${environment.apiUrl}/auth`;
 
-  constructor(
-    private router: Router,
-    private userService: UserService,
-    private inactivity: InactivityService,
-  ) {}
+  private userSubject = new BehaviorSubject<AppUser | null>(this.loadUser());
+  user$ = this.userSubject.asObservable();
 
-  login(username: string, password: string): boolean {
-    if (this.userService.verificar(username, password)) {
-      sessionStorage.setItem(SESSION_KEY, '1');
-      this.inactivity.start();
-      return true;
-    }
-    return false;
+  constructor(private http: HttpClient, private router: Router) {}
+
+  // ─── Autenticación ────────────────────────────────────────────────────────
+
+  login(username: string, password: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { username, password }).pipe(
+      tap(res => {
+        localStorage.setItem(TOKEN_KEY, res.access_token);
+        localStorage.setItem(USER_KEY, JSON.stringify(res.user));
+        this.userSubject.next(res.user as AppUser);
+      }),
+    );
   }
 
   logout(): void {
-    sessionStorage.removeItem(SESSION_KEY);
-    this.inactivity.stop();
+    this.clearSession();
     this.router.navigate(['/login']);
   }
 
-  /**
-   * Sesión válida si:
-   * 1. El flag de sessionStorage existe (misma pestaña), Y
-   * 2. El timestamp de actividad no ha expirado.
-   *
-   * Si el usuario cierra la pestaña y vuelve después de 10 min,
-   * sessionStorage se habrá borrado solo (comportamiento nativo del browser),
-   * por lo que el guard redirigirá al login de todas formas.
-   *
-   * Si vuelve antes de 10 min pero el timestamp expiró, también se rechaza.
-   */
+  clearSession(): void {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    this.userSubject.next(null);
+  }
+
+  /** Refresca el perfil desde el backend (útil al recargar la app). */
+  refreshProfile(): Observable<AppUser> {
+    return this.http.get<AppUser>(`${this.apiUrl}/me`).pipe(
+      tap(user => {
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        this.userSubject.next(user);
+      }),
+    );
+  }
+
+  // ─── Estado ───────────────────────────────────────────────────────────────
+
   isAuthenticated(): boolean {
-    const flag = sessionStorage.getItem(SESSION_KEY) === '1';
-    if (!flag) return false;
-    // Comprueba expiración por inactividad
-    if (!this.inactivity.isSessionValid()) {
-      // Limpia sin redirigir (el guard se encarga)
-      sessionStorage.removeItem(SESSION_KEY);
-      this.inactivity.stop();
-      return false;
-    }
-    return true;
+    return !!localStorage.getItem(TOKEN_KEY);
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  getCurrentUser(): AppUser | null {
+    return this.userSubject.value;
+  }
+
+  hasRole(...roles: string[]): boolean {
+    const user = this.getCurrentUser();
+    return !!user && roles.includes(user.rol);
+  }
+
+  // ─── Privado ──────────────────────────────────────────────────────────────
+
+  private loadUser(): AppUser | null {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
   }
 }

@@ -13,25 +13,24 @@ import { EspecialidadService } from '../../../services/especialidad.service';
 import { ActivityService } from '../../../services/activity';
 import { IconService } from '../../../services/icon.service';
 import { SafeUrlPipe } from '../../../pipes/safe-url.pipe';
+import { ImageUrlInputComponent } from '../../../components/image-url-input/image-url-input.component';
 import {
   Especialidad, Tab,
   AnioMalla,
-  SalidaProfesional,
-  ImagenInstalacion,
-  BotonAdmision,
-  Testimonio,
-} from '../../../models';
+} from '../../../models/api.models';
 
 @Component({
   selector: 'app-especialidad-editor',
   standalone: true,
   templateUrl: './especialidad-editor.html',
   styleUrl: './especialidad-editor.css',
-  imports: [FormsModule, CommonModule, SafeUrlPipe],
+  imports: [FormsModule, CommonModule, SafeUrlPipe, ImageUrlInputComponent],
 })
 export class EspecialidadEditor implements OnInit {
 
   especialidad: Especialidad | undefined;
+  cargando = true;
+  errorCarga: string | null = null;
   breadcrumb = '';
   tabActiva = 'general';
   guardado = false;
@@ -45,6 +44,7 @@ export class EspecialidadEditor implements OnInit {
     { id: 'malla',       label: 'Malla Curricular' },
     { id: 'coordinador', label: 'Coordinador'      },
     { id: 'admisiones',  label: 'Admisiones'       },
+    { id: 'testimonios', label: 'Testimonios'      },
     { id: 'publicacion', label: 'Publicación'      },
   ];
 
@@ -69,12 +69,46 @@ export class EspecialidadEditor implements OnInit {
     if (nombre) this.breadcrumb = nombre;
 
     const id = this.route.snapshot.paramMap.get('id');
-    const original = this.especialidadService.getById(id ?? '');
-    if (original) {
-      // Deep clone para desacoplar del servicio
-      this.especialidad = JSON.parse(JSON.stringify(original));
-      this.inicializarSecciones();
+    if (!id) {
+      this.errorCarga = 'ID de especialidad no válido.';
+      this.cargando = false;
+      return;
     }
+
+    // Intentar cargar desde la lista en memoria primero (respuesta inmediata)
+    const fromMemory = this.especialidadService.getAll().find(e => e._id === id);
+    if (fromMemory) {
+      this.especialidad = JSON.parse(JSON.stringify(fromMemory));
+      this.inicializarSecciones();
+      this.cargando = false;
+    }
+
+    // Siempre hacer el request HTTP para tener datos completos/frescos
+    this.especialidadService.getById(id).subscribe({
+      next: original => {
+        this.especialidad = JSON.parse(JSON.stringify(original));
+        this.inicializarSecciones();
+        this.cargando = false;
+        this.errorCarga = null;
+      },
+      error: (err) => {
+        console.error('[EspecialidadEditor] Error al cargar por ID:', err?.status, err?.message);
+        if (!this.especialidad) {
+          // Sin datos en memoria: buscar en el listado reactivo como último recurso
+          const listaActual = this.especialidadService.getAll();
+          const fromList = listaActual.find(e => e._id === id);
+          if (fromList) {
+            this.especialidad = JSON.parse(JSON.stringify(fromList));
+            this.inicializarSecciones();
+            this.cargando = false;
+          } else {
+            this.errorCarga = `No se pudo cargar la especialidad (error ${err?.status ?? 'sin conexión'}). Verifica que el servidor esté activo.`;
+            this.cargando = false;
+          }
+        }
+        // Si ya tenemos datos en memoria, seguir mostrándolos
+      },
+    });
   }
 
   /**
@@ -85,14 +119,58 @@ export class EspecialidadEditor implements OnInit {
     if (!this.especialidad) return;
     const e = this.especialidad;
 
-    e.malla ??= [];
-    e.perfilCoordinador ??= { nombre: e.coordinador, cargo: '', foto: '', email: '', telefono: '' };
-    e.perfilEstudiante  ??= { descripcion: '', habilidades: [] };
-    e.salidasProfesionales ??= [];
-    e.instalaciones ??= [];
-    e.admisiones ??= { texto: '', fechaImportante: '', labelFecha: 'Fecha de examen', botones: [] };
-    e.testimonios ??= [];
-    e.publicacion ??= { publicado: false, fechaPublicacion: '', visibleEnWeb: false };
+    e.duracion ??= '3 años';
+    e.nivel    ??= 'Bachillerato';
+    e.malla    = Array.isArray(e.malla) ? e.malla : [];
+
+    // perfilCoordinador: puede llegar como string vacío desde el backend
+    if (!e.perfilCoordinador || typeof e.perfilCoordinador !== 'object' || Array.isArray(e.perfilCoordinador)) {
+      e.perfilCoordinador = { nombre: e.coordinador ?? '', cargo: '', foto: '', email: '', telefono: '' };
+    } else {
+      e.perfilCoordinador.nombre ??= e.coordinador ?? '';
+      e.perfilCoordinador.cargo  ??= '';
+      e.perfilCoordinador.foto   ??= '';
+      e.perfilCoordinador.email  ??= '';
+      e.perfilCoordinador.telefono ??= '';
+    }
+
+    // perfilEstudiante: backend devuelve [] (lista), frontend espera { descripcion, habilidades[] }
+    if (!e.perfilEstudiante || Array.isArray(e.perfilEstudiante) || typeof e.perfilEstudiante !== 'object') {
+      e.perfilEstudiante = { descripcion: '', habilidades: [] };
+    } else {
+      e.perfilEstudiante.descripcion ??= '';
+      e.perfilEstudiante.habilidades  = Array.isArray(e.perfilEstudiante.habilidades)
+        ? e.perfilEstudiante.habilidades : [];
+    }
+
+    // salidasProfesionales: backend devuelve [] de strings, frontend espera objetos
+    if (!Array.isArray(e.salidasProfesionales)) {
+      e.salidasProfesionales = [];
+    } else {
+      e.salidasProfesionales = e.salidasProfesionales
+        .filter((s: any) => s && typeof s === 'object')
+        .map((s: any) => ({
+          id: s.id ?? Date.now(),
+          icono: s.icono ?? 'gear',
+          titulo: s.titulo ?? '',
+          descripcion: s.descripcion ?? '',
+        }));
+    }
+
+    e.instalaciones = Array.isArray(e.instalaciones) ? e.instalaciones : [];
+
+    // admisiones: garantizar que botones siempre sea array
+    if (!e.admisiones || typeof e.admisiones !== 'object' || Array.isArray(e.admisiones)) {
+      e.admisiones = { texto: '', fechaImportante: '', labelFecha: 'Fecha de examen', botones: [] };
+    } else {
+      e.admisiones.texto          ??= '';
+      e.admisiones.fechaImportante ??= '';
+      e.admisiones.labelFecha     ??= 'Fecha de examen';
+      e.admisiones.botones         = Array.isArray(e.admisiones.botones) ? e.admisiones.botones : [];
+    }
+
+    e.testimonios = Array.isArray(e.testimonios) ? e.testimonios : [];
+    e.publicacion ??= { publicado: true, fechaPublicacion: '', visibleEnWeb: true };
   }
 
   // ─── Guardar / Eliminar ─────────────────────────────────────────────────────
@@ -103,12 +181,17 @@ export class EspecialidadEditor implements OnInit {
     if (this.especialidad.perfilCoordinador?.nombre) {
       this.especialidad.coordinador = this.especialidad.perfilCoordinador.nombre;
     }
-    this.especialidadService.actualizar(this.especialidad);
-    this.activityService.agregarActividad(
-      'especialidad', 'Especialidad actualizada',
-      `Se guardaron los cambios de "${this.especialidad.titulo}".`
-    );
-    this.guardado = true;
+    // Normalizar URL de YouTube al formato embed
+    if (this.especialidad.videoUrl) {
+      this.especialidad.videoUrl = this.toEmbedUrl(this.especialidad.videoUrl);
+    }
+    this.especialidadService.actualizar(this.especialidad).subscribe(() => {
+      this.activityService.agregarActividad(
+        'especialidad', 'Especialidad actualizada',
+        `Se guardaron los cambios de "${this.especialidad!.titulo}".`
+      );
+      this.guardado = true;
+    });
   }
 
   pedirEliminar(): void    { this.confirmarEliminar = true; }
@@ -116,17 +199,40 @@ export class EspecialidadEditor implements OnInit {
 
   confirmarEliminarEspecialidad(): void {
     if (!this.especialidad) return;
-    this.activityService.agregarActividad(
-      'especialidad', 'Especialidad eliminada',
-      `Se eliminó la especialidad "${this.especialidad.titulo}".`
-    );
-    this.especialidadService.eliminar(this.especialidad.id);
-    this.router.navigate(['/especialidades']);
+    this.especialidadService.eliminar(this.especialidad._id).subscribe(() => {
+      this.activityService.agregarActividad(
+        'especialidad', 'Especialidad eliminada',
+        `Se eliminó la especialidad "${this.especialidad!.titulo}".`
+      );
+      this.router.navigate(['/especialidades']);
+    });
   }
 
   onCambio(): void { this.guardado = false; }
 
   volver(): void { this.location.back(); }
+
+  /** Convierte cualquier URL de YouTube (watch/share) al formato embed requerido para iframes. */
+  toEmbedUrl(url: string): string {
+    if (!url) return '';
+    // Ya es embed
+    if (url.includes('youtube.com/embed/')) return url;
+    // youtu.be/VIDEO_ID
+    const shortMatch = url.match(/youtu\.be\/([^?&\s]+)/);
+    if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}`;
+    // youtube.com/watch?v=VIDEO_ID
+    const watchMatch = url.match(/youtube\.com\/watch\?v=([^&\s]+)/);
+    if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}`;
+    return url;
+  }
+
+  /** Normaliza la URL de video al formato embed antes de guardar. */
+  normalizarVideoUrl(): void {
+    if (this.especialidad?.videoUrl) {
+      this.especialidad.videoUrl = this.toEmbedUrl(this.especialidad.videoUrl);
+    }
+    this.onCambio();
+  }
 
   // ─── Malla Curricular ───────────────────────────────────────────────────────
 

@@ -2,13 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdmisionesService, AdmisionesConfig, AdmisionStep, AdmisionReq, AdmisionDownload, AdmisionDate } from '../../services/admisiones.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
 type Tab = 'hero' | 'proceso' | 'requisitos' | 'fechas' | 'cta';
 
 @Component({
   selector: 'app-admisiones',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
   templateUrl: './admisiones.html',
 })
 export class Admisiones implements OnInit {
@@ -26,11 +27,14 @@ export class Admisiones implements OnInit {
   ];
 
   constructor(private svc: AdmisionesService) {}
-  ngOnInit(): void { this.config = this.svc.getCopia(); }
+  ngOnInit(): void {
+    this.config = this.svc.getCopia();
+    this.svc.cargarDesdeBackend().subscribe(cfg => { this.config = cfg; });
+  }
   onChange(): void { this.guardado = false; }
 
   guardar(): void {
-    this.svc.guardar(this.config);
+    this.svc.guardar(this.config).subscribe();
     this.guardado = true;
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => this.guardado = false, 3000);

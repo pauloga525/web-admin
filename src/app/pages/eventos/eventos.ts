@@ -1,8 +1,7 @@
 /**
  * @file eventos.ts
  * @description Módulo administrativo de gestión de eventos institucionales.
- * Permite crear, editar, destacar, publicar y eliminar eventos,
- * así como gestionar categorías y la configuración del hero.
+ * Conectado al backend NestJS — usa _id (string) en lugar de id (number).
  */
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { NgClass } from '@angular/common';
@@ -11,9 +10,9 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { EventoService } from '../../services/evento.service';
 import { ActivityService } from '../../services/activity';
-import { Evento, CategoriaEvento, HeroEventos } from '../../models';
+import { Evento, CategoriaEvento, HeroEventos, CreateEventoDto } from '../../models/api.models';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
-/** Colores disponibles para categorías. */
 const COLORES_CAT: Record<string, string> = {
   blue:   'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700',
   purple: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700',
@@ -29,16 +28,14 @@ type VistaAdmin = 'eventos' | 'categorias' | 'hero';
 
 @Component({
   selector: 'app-eventos',
-  imports: [NgClass, FormsModule],
+  imports: [NgClass, FormsModule, ImageUrlInputComponent],
   templateUrl: './eventos.html',
   styleUrl: './eventos.css',
 })
 export class Eventos implements OnInit, OnDestroy {
 
-  // ─── Vista activa ──────────────────────────────────────────────────────────
   vistaActiva: VistaAdmin = 'eventos';
 
-  // ─── Datos ────────────────────────────────────────────────────────────────
   eventos:    Evento[]          = [];
   categorias: CategoriaEvento[] = [];
   hero:       HeroEventos       = { etiqueta: '', titulo: '', subtitulo: '', imagenFondo: '' };
@@ -65,9 +62,9 @@ export class Eventos implements OnInit, OnDestroy {
   readonly anios = [2024, 2025, 2026, 2027];
 
   // ─── Modal evento ─────────────────────────────────────────────────────────
-  modalEvento    = false;
-  editandoId: number | null = null;
-
+  modalEvento = false;
+  /** _id del evento que se edita. null = modo creación. */
+  editandoId: string | null = null;
   form: Partial<Evento> = {};
 
   // ─── Modal categoría ──────────────────────────────────────────────────────
@@ -76,14 +73,14 @@ export class Eventos implements OnInit, OnDestroy {
   formCat: Partial<CategoriaEvento> = {};
 
   // ─── Confirmación eliminar ────────────────────────────────────────────────
-  confirmarEliminar      = false;
+  confirmarEliminar     = false;
   eventoEliminar: Evento | null = null;
 
-  confirmarEliminarCat      = false;
+  confirmarEliminarCat     = false;
   catEliminar: CategoriaEvento | null = null;
 
-  // ─── Menú contextual ──────────────────────────────────────────────────────
-  menuAbierto: number | null = null;
+  // ─── Menú contextual — usa _id (string) ──────────────────────────────────
+  menuAbierto: string | null = null;
 
   private subs = new Subscription();
 
@@ -101,10 +98,10 @@ export class Eventos implements OnInit, OnDestroy {
 
   ngOnDestroy(): void { this.subs.unsubscribe(); }
 
-  // ─── Navegación ───────────────────────────────────────────────────────────
+  // ─── Navegación — usa _id ─────────────────────────────────────────────────
 
   irEditor(ev: Evento): void {
-    this.router.navigate(['/eventos', ev.id], { state: { titulo: ev.titulo } });
+    this.router.navigate(['/eventos', ev._id], { state: { titulo: ev.titulo } });
   }
 
   // ─── Modal evento ─────────────────────────────────────────────────────────
@@ -124,7 +121,7 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   abrirModalEditar(ev: Evento): void {
-    this.editandoId  = ev.id;
+    this.editandoId  = ev._id;   // ← _id string
     this.form        = JSON.parse(JSON.stringify(ev));
     this.modalEvento = true;
     this.menuAbierto = null;
@@ -136,47 +133,55 @@ export class Eventos implements OnInit, OnDestroy {
     const { titulo, descripcionCorta, categoria, fecha, ubicacion } = this.form;
     if (!titulo || !descripcionCorta || !categoria || !fecha || !ubicacion) return;
 
-    // Sincronizar color de categoría
     const cat = this.categorias.find(c => c.nombre === categoria);
     if (cat) this.form.categoriaColor = cat.color;
 
     if (this.editandoId !== null) {
-      this.eventoService.actualizar(this.form as Evento);
-      this.activityService.agregarActividad('evento', 'Evento actualizado', `Se editó "${titulo}".`);
+      // Actualización — el objeto ya tiene _id
+      this.eventoService.actualizar(this.form as Evento).subscribe(() => {
+        this.activityService.agregarActividad('evento', 'Evento actualizado', `Se editó "${titulo}".`);
+      });
     } else {
-      this.form.slug = this.eventoService.generarSlug(titulo!);
-      this.eventoService.agregar(this.form as Omit<Evento, 'id' | 'fechaCreacion'>);
-      this.activityService.agregarActividad('evento', 'Evento creado', `Se creó "${titulo}".`);
+      // Creación
+      const dto: CreateEventoDto = {
+        ...(this.form as CreateEventoDto),
+        slug: this.eventoService.generarSlug(titulo!),
+      };
+      this.eventoService.agregar(dto).subscribe(() => {
+        this.activityService.agregarActividad('evento', 'Evento creado', `Se creó "${titulo}".`);
+      });
     }
     this.cerrarModalEvento();
   }
 
-  // ─── Acciones rápidas ─────────────────────────────────────────────────────
+  // ─── Acciones rápidas — usan _id ─────────────────────────────────────────
 
   togglePublicado(ev: Evento, e: Event): void {
     e.stopPropagation();
-    this.eventoService.togglePublicado(ev.id);
+    this.eventoService.togglePublicado(ev._id).subscribe();
   }
 
   setDestacado(ev: Evento, e: Event): void {
     e.stopPropagation();
-    this.eventoService.setDestacado(ev.id);
-    this.activityService.agregarActividad('evento', 'Evento destacado', `"${ev.titulo}" marcado como destacado.`);
+    this.eventoService.setDestacado(ev._id).subscribe(() => {
+      this.activityService.agregarActividad('evento', 'Evento destacado', `"${ev.titulo}" marcado como destacado.`);
+    });
     this.menuAbierto = null;
   }
 
   // ─── Eliminar evento ──────────────────────────────────────────────────────
 
   pedirEliminar(ev: Evento): void {
-    this.eventoEliminar  = ev;
+    this.eventoEliminar    = ev;
     this.confirmarEliminar = true;
-    this.menuAbierto     = null;
+    this.menuAbierto       = null;
   }
 
   confirmarEliminarEvento(): void {
     if (!this.eventoEliminar) return;
-    this.activityService.agregarActividad('evento', 'Evento eliminado', `Se eliminó "${this.eventoEliminar.titulo}".`);
-    this.eventoService.eliminar(this.eventoEliminar.id);
+    this.eventoService.eliminar(this.eventoEliminar._id).subscribe(() => {
+      this.activityService.agregarActividad('evento', 'Evento eliminado', `Se eliminó "${this.eventoEliminar!.titulo}".`);
+    });
     this.eventoEliminar    = null;
     this.confirmarEliminar = false;
   }
@@ -186,8 +191,8 @@ export class Eventos implements OnInit, OnDestroy {
   // ─── Categorías ───────────────────────────────────────────────────────────
 
   abrirModalCat(cat?: CategoriaEvento): void {
-    this.editandoCatId = cat?.id ?? null;
-    this.formCat       = cat ? { ...cat } : { nombre: '', color: 'blue' };
+    this.editandoCatId  = cat?.id ?? null;
+    this.formCat        = cat ? { ...cat } : { nombre: '', color: 'blue' };
     this.modalCategoria = true;
   }
 
@@ -220,18 +225,21 @@ export class Eventos implements OnInit, OnDestroy {
     this.activityService.agregarActividad('evento', 'Hero actualizado', 'Se actualizó la configuración del hero de eventos.');
   }
 
-  // ─── Menú contextual ──────────────────────────────────────────────────────
+  // ─── Menú contextual — usa _id (string) ──────────────────────────────────
 
-  toggleMenu(id: number, e: Event): void { e.stopPropagation(); this.menuAbierto = this.menuAbierto === id ? null : id; }
+  toggleMenu(id: string, e: Event): void {
+    e.stopPropagation();
+    this.menuAbierto = this.menuAbierto === id ? null : id;
+  }
 
   @HostListener('document:click')
   cerrarMenu(): void { this.menuAbierto = null; }
 
   @HostListener('document:keydown.escape')
   cerrarEscape(): void {
-    this.menuAbierto = null;
-    this.confirmarEliminar = false;
-    this.confirmarEliminarCat = false;
+    this.menuAbierto           = null;
+    this.confirmarEliminar     = false;
+    this.confirmarEliminarCat  = false;
   }
 
   // ─── Utilidades ───────────────────────────────────────────────────────────

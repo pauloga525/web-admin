@@ -1,14 +1,17 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EstudiantesPageService, EstudiantesPageConfig, GaleriaImagen, Club, Promocion, Logro, Instalacion } from '../../services/estudiantes-page.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
+import { PromocioneManagerComponent } from '../../components/promociones-manager/promociones-manager.component';
+import { Subscription } from 'rxjs';
 
 type Tab = 'hero' | 'galeria' | 'clubes' | 'promociones' | 'logros' | 'instalaciones';
 
 @Component({
   selector: 'app-estudiantes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent, PromocioneManagerComponent],
   template: `
 <div class="p-8 max-w-5xl mx-auto w-full space-y-6">
 
@@ -41,8 +44,7 @@ type Tab = 'hero' | 'galeria' | 'clubes' | 'promociones' | 'logros' | 'instalaci
       <div class="space-y-4 animate-[fadeIn_.2s_ease_forwards]">
         <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Hero</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL imagen de fondo</label>
-            <input [(ngModel)]="config.heroImagen" (ngModelChange)="onChange()" placeholder="https://..." class="input-field" /></div>
+          <app-image-url-input class="md:col-span-2" label="Imagen de fondo" [(ngModel)]="config.heroImagen" (ngModelChange)="onChange()" placeholder="https://..." previewHeight="h-40" />
           <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título</label>
             <input [(ngModel)]="config.heroTitulo" (ngModelChange)="onChange()" class="input-field font-semibold" /></div>
           <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descripción</label>
@@ -79,7 +81,7 @@ type Tab = 'hero' | 'galeria' | 'clubes' | 'promociones' | 'logros' | 'instalaci
             <div class="w-16 h-12 rounded-lg shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
               @if (img.url) { <img [src]="img.url" [alt]="img.alt" class="w-full h-full object-cover" /> }
             </div>
-            <input [(ngModel)]="img.url" (ngModelChange)="onChange()" placeholder="URL imagen" class="flex-1 input-field text-xs" />
+            <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="img.url" (ngModelChange)="onChange()" placeholder="URL imagen" [showPreview]="false" />
             <input [(ngModel)]="img.caption" (ngModelChange)="onChange()" placeholder="Leyenda" class="flex-1 input-field text-xs" />
             <button type="button" (click)="eliminarGaleria(img.id)" class="text-slate-300 hover:text-red-500 transition shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg></button>
           </div>
@@ -115,31 +117,13 @@ type Tab = 'hero' | 'galeria' | 'clubes' | 'promociones' | 'logros' | 'instalaci
 
       <!-- ══ PROMOCIONES ══ -->
       @if (tabActiva === 'promociones') {
-      <div class="space-y-4 animate-[fadeIn_.2s_ease_forwards]">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título</label>
-            <input [(ngModel)]="config.promocionesTitulo" (ngModelChange)="onChange()" class="input-field" /></div>
-          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descripción</label>
-            <input [(ngModel)]="config.promocionesDescripcion" (ngModelChange)="onChange()" class="input-field" /></div>
-        </div>
-        <hr class="border-slate-100 dark:border-slate-800" />
-        <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Generaciones</h3>
-          <button type="button" (click)="agregarPromocion()" class="text-xs text-primary hover:underline flex items-center gap-1"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Agregar</button>
-        </div>
-        <div class="space-y-3">
-          @for (p of config.promociones; track trackById($index, p)) {
-          <div class="flex items-center gap-3 border border-slate-200 dark:border-slate-700 rounded-xl p-3">
-            <div class="w-20 h-14 rounded-lg shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-              @if (p.image) { <img [src]="p.image" [alt]="p.classOf" class="w-full h-full object-cover" /> }
-            </div>
-            <input [(ngModel)]="p.classOf" (ngModelChange)="onChange()" placeholder="Ej: Promoción 2024" class="w-40 input-field text-sm font-semibold" />
-            <input [(ngModel)]="p.image" (ngModelChange)="onChange()" placeholder="URL imagen" class="flex-1 input-field text-xs" />
-            <input [(ngModel)]="p.url" (ngModelChange)="onChange()" placeholder="URL galería" class="w-32 input-field text-xs" />
-            <button type="button" (click)="eliminarPromocion(p.id)" class="text-slate-300 hover:text-red-500 transition shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg></button>
-          </div>
-          }
-        </div>
+      <div class="animate-[fadeIn_.2s_ease_forwards]">
+        <app-promociones-manager
+          [titulo]="config.promocionesTitulo"
+          [descripcion]="config.promocionesDescripcion"
+          [promociones]="config.promociones"
+          (cambios)="onPromocionesCambios($event)">
+        </app-promociones-manager>
       </div>
       }
 
@@ -171,7 +155,7 @@ type Tab = 'hero' | 'galeria' | 'clubes' | 'promociones' | 'logros' | 'instalaci
               <div class="w-16 h-12 rounded-lg shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                 @if (l.image) { <img [src]="l.image" [alt]="l.title" class="w-full h-full object-cover" /> }
               </div>
-              <input [(ngModel)]="l.image" (ngModelChange)="onChange()" placeholder="URL imagen" class="flex-1 input-field text-xs" />
+              <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="l.image" (ngModelChange)="onChange()" placeholder="URL imagen" [showPreview]="false" />
             </div>
           </div>
           }
@@ -201,7 +185,7 @@ type Tab = 'hero' | 'galeria' | 'clubes' | 'promociones' | 'logros' | 'instalaci
                 <input [(ngModel)]="inst.title" (ngModelChange)="onChange()" placeholder="Título" class="flex-1 input-field font-semibold" />
                 <button type="button" (click)="eliminarInstalacion(inst.id)" class="text-slate-300 hover:text-red-500 transition shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
-              <input [(ngModel)]="inst.image" (ngModelChange)="onChange()" placeholder="URL imagen" class="w-full input-field text-xs" />
+              <app-image-url-input [(ngModel)]="inst.image" (ngModelChange)="onChange()" placeholder="URL imagen" [showPreview]="false" />
               <textarea [(ngModel)]="inst.description" (ngModelChange)="onChange()" rows="2" placeholder="Descripción" class="w-full input-field resize-none text-sm"></textarea>
             </div>
           </div>
@@ -215,12 +199,13 @@ type Tab = 'hero' | 'galeria' | 'clubes' | 'promociones' | 'logros' | 'instalaci
 </div>
   `,
 })
-export class Estudiantes implements OnInit {
+export class Estudiantes implements OnInit, OnDestroy {
 
-  config!: EstudiantesPageConfig;
+  config: EstudiantesPageConfig;
   tabActiva: Tab = 'hero';
   guardado = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private sub?: Subscription;
 
   tabs: { id: Tab; label: string }[] = [
     { id: 'hero',          label: 'Hero'          },
@@ -231,15 +216,30 @@ export class Estudiantes implements OnInit {
     { id: 'instalaciones', label: 'Instalaciones' },
   ];
 
-  constructor(private svc: EstudiantesPageService) {}
-  ngOnInit(): void { this.config = this.svc.getCopia(); }
+  constructor(private svc: EstudiantesPageService) {
+    this.config = this.svc.getCopia();
+  }
+  ngOnInit(): void {
+    this.sub = this.svc.config$.subscribe(config => {
+      this.config = JSON.parse(JSON.stringify(config));
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
+  }
+
   onChange(): void { this.guardado = false; }
 
   guardar(): void {
-    this.svc.guardar(this.config);
-    this.guardado = true;
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.guardado = false, 3000);
+    this.svc.guardar(this.config).subscribe({
+      next: () => {
+        this.guardado = true;
+        if (this.timer) clearTimeout(this.timer);
+        this.timer = setTimeout(() => this.guardado = false, 3000);
+      },
+      error: err => console.error('[Estudiantes] Error al guardar:', err),
+    });
   }
 
   trackById(_i: number, item: { id: number }): number { return item.id; }
@@ -250,8 +250,12 @@ export class Estudiantes implements OnInit {
   agregarClub(): void       { this.config.clubes.push({ id: this.svc.nextId(), icon: 'star', title: '', description: '' }); this.onChange(); }
   eliminarClub(id: number): void    { this.config.clubes = this.config.clubes.filter(c => c.id !== id); this.onChange(); }
 
-  agregarPromocion(): void  { this.config.promociones.push({ id: this.svc.nextId(), classOf: '', image: '', url: '#' }); this.onChange(); }
-  eliminarPromocion(id: number): void { this.config.promociones = this.config.promociones.filter(p => p.id !== id); this.onChange(); }
+  onPromocionesCambios(cambios: { titulo: string; descripcion: string; promociones: Promocion[] }): void {
+    this.config.promocionesTitulo = cambios.titulo;
+    this.config.promocionesDescripcion = cambios.descripcion;
+    this.config.promociones = cambios.promociones;
+    this.onChange();
+  }
 
   agregarLogro(): void      { this.config.logros.push({ id: this.svc.nextId(), badge: '', date: '', title: '', description: '', image: '' }); this.onChange(); }
   eliminarLogro(id: number): void   { this.config.logros = this.config.logros.filter(l => l.id !== id); this.onChange(); }

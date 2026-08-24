@@ -6,12 +6,16 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { HttpClient } from '@angular/common/http';
+import { Subscription, lastValueFrom } from 'rxjs';
 
 import { ActivityService } from '../../services/activity';
 import { HomeService }     from '../../services/home.service';
 import { EventoService }   from '../../services/evento.service';
 import { KpiService, KpiCard } from '../../services/kpi.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
+import { environment } from '../../../environments/environment';
 
 import {
   Actividad, GrupoActividad,
@@ -24,7 +28,7 @@ interface SeccionNav { id: string; label: string; }
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterModule, CommonModule, FormsModule],
+  imports: [RouterModule, CommonModule, FormsModule, ImageUrlInputComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -42,6 +46,7 @@ export class Dashboard implements OnInit, OnDestroy {
   // ─── Home editor ──────────────────────────────────────────────────────────
   home!: HomeConfig;
   guardadoHome = false;
+  errorHome: string | null = null;
   seccionActiva = 'hero';
 
   secciones: SeccionNav[] = [
@@ -57,17 +62,94 @@ export class Dashboard implements OnInit, OnDestroy {
   private subs = new Subscription();
   private guardadoTimer: ReturnType<typeof setTimeout> | null = null;
 
+  heroUploading = false;
+
   constructor(
     public activityService: ActivityService,
     private homeService: HomeService,
     private eventoService: EventoService,
     private kpiService: KpiService,
+    private sanitizer: DomSanitizer,
+    private http: HttpClient,
   ) {}
+
+  // ─── Hero media ────────────────────────────────────────────────────────────
+  heroSafeVideoUrl: SafeUrl | null = null;
+  heroMediaError: string | null = null;
+
+  get heroEsVideo(): boolean {
+    return this.home?.hero?.mediaType === 'video' ||
+           (this.home?.hero?.imagenFondo?.startsWith('data:video/') ?? false);
+  }
+
+  private actualizarHeroSafeVideoUrl(): void {
+    const src = this.home?.hero?.imagenFondo ?? '';
+    this.heroSafeVideoUrl = (src && this.heroEsVideo)
+      ? this.sanitizer.bypassSecurityTrustUrl(src)
+      : null;
+  }
+
+  onHeroMediaSelect(event: Event): void {
+    this.heroMediaError = null;
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (file.type.startsWith('video/')) {
+      this.heroMediaError = 'Los videos no pueden subirse como archivo. Usa una URL externa (YouTube embed, CDN, etc.) pegándola en el campo de texto.';
+      input.value = '';
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      this.heroMediaError = 'Formato no soportado. Usa imágenes (JPG, PNG, WebP).';
+      input.value = '';
+      return;
+    }
+
+    this.heroUploading = true;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    lastValueFrom(
+      this.http.post<{ url: string }>(`${environment.apiUrl}/configuracion/imagenes`, formData)
+    ).then(res => {
+      if (!res?.url) throw new Error('Sin URL');
+      this.home.hero.imagenFondo = res.url;
+      this.home.hero.mediaType = 'image';
+      this.actualizarHeroSafeVideoUrl();
+      this.onCambioHome();
+    }).catch(() => {
+      this.heroMediaError = 'No se pudo subir la imagen. Verifica que el backend esté activo.';
+    }).finally(() => {
+      this.heroUploading = false;
+      input.value = '';
+    });
+  }
+
+  removeHeroMedia(): void {
+    this.home.hero.imagenFondo = '';
+    this.home.hero.mediaType = undefined;
+    this.heroSafeVideoUrl = null;
+    this.onCambioHome();
+  }
+
+  private homeEditando = false;
 
   ngOnInit(): void {
     this.kpis = this.kpiService.getCopia();
-    this.home = this.homeService.getCopia();
     this.actividades = this.activityService.getActividadesRecientes();
+
+    // Suscripción reactiva: actualiza this.home cuando llega la respuesta del backend
+    // (evita mostrar datos vacíos mientras el HTTP GET termina)
+    this.subs.add(
+      this.homeService.config$.subscribe(config => {
+        if (!this.homeEditando) {
+          this.home = JSON.parse(JSON.stringify(config));
+          this.actualizarHeroSafeVideoUrl();
+        }
+      })
+    );
 
     this.subs.add(
       this.eventoService.eventos$.subscribe(evs => {
@@ -114,13 +196,33 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   // ─── Home ──────────────────────────────────────────────────────────────────
-  onCambioHome(): void { this.guardadoHome = false; }
+  onCambioHome(): void {
+    this.guardadoHome = false;
+    this.homeEditando = true;
+  }
 
   guardarHome(): void {
-    this.homeService.guardar(this.home);
-    this.guardadoHome = true;
-    if (this.guardadoTimer) clearTimeout(this.guardadoTimer);
-    this.guardadoTimer = setTimeout(() => { this.guardadoHome = false; }, 3000);
+    this.errorHome = null;
+    this.subs.add(
+      this.homeService.guardar(this.home).subscribe({
+        next: () => {
+          this.homeEditando = false;
+          this.guardadoHome = true;
+          if (this.guardadoTimer) clearTimeout(this.guardadoTimer);
+          this.guardadoTimer = setTimeout(() => { this.guardadoHome = false; }, 3000);
+        },
+        error: (err) => {
+          console.error('❌ Error al guardar home:', err);
+          if (err?.status === 401) {
+            this.errorHome = 'Sesión expirada. Por favor, vuelve a iniciar sesión.';
+          } else if (err?.status === 413) {
+            this.errorHome = 'El contenido es demasiado grande para guardar. Reduce el tamaño de las imágenes o usa URLs externas en lugar de archivos subidos.';
+          } else {
+            this.errorHome = `Error al guardar: ${err?.status ?? 'desconocido'}`;
+          }
+        }
+      })
+    );
   }
 
   trackById(_i: number, item: { id: number }): number { return item.id; }
@@ -187,7 +289,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
   // ── Comunicación ───────────────────────────────────────────────────────────
   agregarComunicacion(): void {
-    this.home.comunicacion.push({ id: this.homeService.nextId(), nombre: '', url: '' });
+    this.home.comunicacion.push({ id: this.homeService.nextId(), nombre: '', url: '', imagen: '' });
     this.onCambioHome();
   }
   eliminarComunicacion(id: number): void {
@@ -207,7 +309,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
   // ── Enlaces de interés ─────────────────────────────────────────────────────
   agregarEnlaceInteres(): void {
-    this.home.enlacesInteres.push({ id: this.homeService.nextId(), nombre: '', url: '' });
+    this.home.enlacesInteres.push({ id: this.homeService.nextId(), nombre: '', url: '', imagen: '' });
     this.onCambioHome();
   }
   eliminarEnlaceInteres(id: number): void {

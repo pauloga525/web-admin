@@ -2,11 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SiteHeaderService, SiteHeaderConfig, NavItem, NavSubItem } from '../../services/site-header.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
 @Component({
   selector: 'app-header-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
   template: `
 <div class="p-8 max-w-4xl mx-auto w-full space-y-6">
   <div class="flex items-center justify-between">
@@ -24,10 +25,14 @@ import { SiteHeaderService, SiteHeaderConfig, NavItem, NavSubItem } from '../../
   <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
     <h2 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Logo</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL del logo</label>
-        <input [(ngModel)]="config.logoUrl" (ngModelChange)="onChange()" placeholder="/logo.png" class="input-field" />
-      </div>
+      <app-image-url-input
+        label="Logo"
+        [(ngModel)]="config.logoUrl"
+        (ngModelChange)="onChange()"
+        placeholder="/logo.png"
+        previewHeight="h-28"
+        fit="contain"
+        alt="Logo del sitio" />
       <div>
         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Texto alternativo</label>
         <input [(ngModel)]="config.logoAlt" (ngModelChange)="onChange()" class="input-field" />
@@ -106,11 +111,14 @@ export class HeaderEditor implements OnInit {
   private timer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private svc: SiteHeaderService) {}
-  ngOnInit(): void { this.config = this.svc.getCopia(); }
+  ngOnInit(): void {
+    this.config = this.svc.getCopia();
+    this.svc.cargarDesdeBackend().subscribe(cfg => { this.config = cfg; });
+  }
   onChange(): void { this.guardado = false; }
 
   guardar(): void {
-    this.svc.guardar(this.config);
+    this.svc.guardar(this.config).subscribe();
     this.guardado = true;
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => this.guardado = false, 3000);

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 
 export interface RepoStat        { id: number; numero: string; etiqueta: string; }
 export interface RepoColeccion   { id: number; icon: string; title: string; description: string; count: string; }
@@ -51,7 +51,7 @@ const DEFAULT: RepositoriosConfig = {
     { id: 4, icon: 'description',  title: 'Informes Técnicos',      description: 'Documentos técnicos y reportes institucionales.',  count: '130+'  },
   ],
   pubTitulo:     'Últimas Publicaciones',
-  pubVerTodoUrl: '#',
+  pubVerTodoUrl: '',
   publicaciones: [
     { id: 1, type: 'Tesis',    title: 'Diseño de sistema de control para brazo robótico',    authors: 'García, J.',   date: '2024', access: 'open'       },
     { id: 2, type: 'Artículo', title: 'Implementación de energías renovables en Ecuador',    authors: 'López, M.',    date: '2024', access: 'open'       },
@@ -59,14 +59,14 @@ const DEFAULT: RepositoriosConfig = {
   ],
   guiaTitulo:     'Guía de Autoarchivo',
   guiaTexto:      '¿Deseas publicar tu tesis o investigación en el repositorio? Consulta nuestra guía paso a paso para estudiantes y docentes.',
-  guiaUrl:        '#',
+  guiaUrl:        '',
   guiaBotonLabel: 'Ver Guía de Envío',
   navTitulo:      'Navegar por',
   navLinks: [
-    { id: 1, icon: 'school',       label: 'Tesis y Proyectos',    href: '#' },
-    { id: 2, icon: 'article',      label: 'Artículos',            href: '#' },
-    { id: 3, icon: 'person',       label: 'Por Autor',            href: '#' },
-    { id: 4, icon: 'calendar_today', label: 'Por Año',            href: '#' },
+    { id: 1, icon: 'school',       label: 'Tesis y Proyectos',    href: '' },
+    { id: 2, icon: 'article',      label: 'Artículos',            href: '' },
+    { id: 3, icon: 'person',       label: 'Por Autor',            href: '' },
+    { id: 4, icon: 'calendar_today', label: 'Por Año',            href: '' },
   ],
   soporteHorario: 'Lunes a Viernes 8:00 - 17:00',
   soporteEmail:   'biblioteca@uets.edu.ec',
@@ -83,3 +83,5 @@ export class RepositoriosService {
   guardar(c: RepositoriosConfig): void { localStorage.setItem(KEY, JSON.stringify(c)); }
   nextId(): number { return Date.now(); }
 }
+
+

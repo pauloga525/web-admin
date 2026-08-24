@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CampusService, CampusConfig, CampusItem, CampusCaracteristica } from '../../services/campus.service';
 import { PlataformasService, Plataforma } from '../../services/plataformas.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
 type Tab = 'hero' | 'yanuncay' | 'crespi' | 'auxiliadora' | 'plataformas';
 
 @Component({
   selector: 'app-campus',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
   template: `
 <div class="p-8 max-w-4xl mx-auto w-full space-y-6">
 
@@ -62,8 +63,7 @@ type Tab = 'hero' | 'yanuncay' | 'crespi' | 'auxiliadora' | 'plataformas';
           <textarea [(ngModel)]="config.heroSubtitulo" (ngModelChange)="onChange()" rows="2" class="input-field resize-none"></textarea>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL imagen de fondo</label>
-          <input [(ngModel)]="config.heroImagen" (ngModelChange)="onChange()" placeholder="https://..." class="input-field" />
+          <app-image-url-input label="Imagen de fondo" [(ngModel)]="config.heroImagen" (ngModelChange)="onChange()" placeholder="https://..." previewHeight="h-40" />
         </div>
       </div>
       }
@@ -98,28 +98,19 @@ type Tab = 'hero' | 'yanuncay' | 'crespi' | 'auxiliadora' | 'plataformas';
               <div>
                 <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Imagen principal</label>
                 <div class="flex items-center gap-3">
-                  <div class="w-16 h-12 rounded-lg shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    @if (c.imagenPrincipal) { <img [src]="c.imagenPrincipal" class="w-full h-full object-cover" /> }
-                  </div>
-                  <input [(ngModel)]="c.imagenPrincipal" (ngModelChange)="onChange()" placeholder="https://..." class="flex-1 input-field text-sm" />
+                  <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="c.imagenPrincipal" (ngModelChange)="onChange()" placeholder="https://..." [showPreview]="false" />
                 </div>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Imagen secundaria 1</label>
                 <div class="flex items-center gap-3">
-                  <div class="w-16 h-12 rounded-lg shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    @if (c.imagenSecundaria1) { <img [src]="c.imagenSecundaria1" class="w-full h-full object-cover" /> }
-                  </div>
-                  <input [(ngModel)]="c.imagenSecundaria1" (ngModelChange)="onChange()" placeholder="https://..." class="flex-1 input-field text-sm" />
+                  <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="c.imagenSecundaria1" (ngModelChange)="onChange()" placeholder="https://..." [showPreview]="false" />
                 </div>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Imagen secundaria 2</label>
                 <div class="flex items-center gap-3">
-                  <div class="w-16 h-12 rounded-lg shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    @if (c.imagenSecundaria2) { <img [src]="c.imagenSecundaria2" class="w-full h-full object-cover" /> }
-                  </div>
-                  <input [(ngModel)]="c.imagenSecundaria2" (ngModelChange)="onChange()" placeholder="https://..." class="flex-1 input-field text-sm" />
+                  <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="c.imagenSecundaria2" (ngModelChange)="onChange()" placeholder="https://..." [showPreview]="false" />
                 </div>
               </div>
             </div>
@@ -135,11 +126,23 @@ type Tab = 'hero' | 'yanuncay' | 'crespi' | 'auxiliadora' | 'plataformas';
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Agregar
               </button>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div class="space-y-2">
               @for (f of c.caracteristicas; track trackById($index, f)) {
-              <div class="flex items-center gap-2">
-                <input [(ngModel)]="f.icon" (ngModelChange)="onChange()" placeholder="Ícono material" class="w-28 input-field text-xs" />
-                <input [(ngModel)]="f.label" (ngModelChange)="onChange()" placeholder="Etiqueta" class="flex-1 input-field text-sm" />
+              <div class="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5">
+                <!-- Vista previa del ícono -->
+                <span class="material-symbols-outlined text-primary shrink-0 text-xl w-6 text-center">{{ f.icon || 'star' }}</span>
+                <!-- Selector de ícono -->
+                <select [(ngModel)]="f.icon" (ngModelChange)="onChange()"
+                  class="input-field text-xs shrink-0 py-1" style="width:200px">
+                  @for (opt of iconOptions; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+                <!-- Texto de la característica -->
+                <input [(ngModel)]="f.label" (ngModelChange)="onChange()"
+                  placeholder="Texto de la característica"
+                  class="flex-1 input-field text-sm min-w-0" />
+                <!-- Eliminar -->
                 <button type="button" (click)="eliminarCaracteristica(c, f.id)" class="text-slate-300 hover:text-red-500 transition shrink-0">
                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
@@ -160,8 +163,7 @@ type Tab = 'hero' | 'yanuncay' | 'crespi' | 'auxiliadora' | 'plataformas';
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL imagen del mapa</label>
-                  <input [(ngModel)]="c.mapaImagen" (ngModelChange)="onChange()" placeholder="https://..." class="input-field text-sm" />
+                  <app-image-url-input label="Imagen del mapa" [(ngModel)]="c.mapaImagen" (ngModelChange)="onChange()" placeholder="https://..." previewHeight="h-28" />
                 </div>
                 <div>
                   <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL "Ver Mapa"</label>
@@ -203,7 +205,7 @@ type Tab = 'hero' | 'yanuncay' | 'crespi' | 'auxiliadora' | 'plataformas';
               @else { <svg class="w-5 h-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> }
             </div>
             <input [(ngModel)]="p.name" (ngModelChange)="onChange()" placeholder="Nombre" class="w-28 input-field text-sm" />
-            <input [(ngModel)]="p.image" (ngModelChange)="onChange()" placeholder="URL logo" class="flex-1 input-field text-xs" />
+            <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="p.image" (ngModelChange)="onChange()" placeholder="URL logo" [showPreview]="false" />
             <input [(ngModel)]="p.url" (ngModelChange)="onChange()" placeholder="URL enlace" class="flex-1 input-field text-xs" />
             <button type="button" (click)="eliminarPlataforma(p.id)" class="text-slate-300 hover:text-red-500 transition shrink-0">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
@@ -228,6 +230,36 @@ export class Campus implements OnInit {
   guardado = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
 
+  readonly iconOptions: { value: string; label: string }[] = [
+    { value: 'science',           label: 'science — Laboratorios'       },
+    { value: 'menu_book',         label: 'menu_book — Biblioteca'       },
+    { value: 'sports',            label: 'sports — Deportes'            },
+    { value: 'sports_soccer',     label: 'sports_soccer — Fútbol'       },
+    { value: 'fitness_center',    label: 'fitness_center — Gimnasio'    },
+    { value: 'restaurant',        label: 'restaurant — Cafetería'       },
+    { value: 'computer',          label: 'computer — Informática'       },
+    { value: 'engineering',       label: 'engineering — Ingeniería'     },
+    { value: 'biotech',           label: 'biotech — Biotecnología'      },
+    { value: 'calculate',         label: 'calculate — Matemáticas'      },
+    { value: 'palette',           label: 'palette — Arte'               },
+    { value: 'music_note',        label: 'music_note — Música'          },
+    { value: 'mic',               label: 'mic — Audio / Grabación'      },
+    { value: 'theaters',          label: 'theaters — Auditorio'         },
+    { value: 'park',              label: 'park — Zonas Verdes'          },
+    { value: 'outdoor_grill',     label: 'outdoor_grill — Área Exterior'},
+    { value: 'connected_tv',      label: 'connected_tv — Conferencias'  },
+    { value: 'meeting_room',      label: 'meeting_room — Sala Reuniones'},
+    { value: 'school',            label: 'school — Educación'           },
+    { value: 'language',          label: 'language — Idiomas'           },
+    { value: 'wifi',              label: 'wifi — WiFi'                  },
+    { value: 'medical_services',  label: 'medical_services — Enfermería'},
+    { value: 'directions_bus',    label: 'directions_bus — Transporte'  },
+    { value: 'security',          label: 'security — Seguridad'         },
+    { value: 'apartment',         label: 'apartment — Edificio'         },
+    { value: 'local_library',     label: 'local_library — Biblioteca'   },
+    { value: 'star',              label: 'star — General'               },
+  ];
+
   tabs: { id: Tab; label: string }[] = [
     { id: 'hero',        label: 'Hero'             },
     { id: 'yanuncay',    label: 'Yanuncay'         },
@@ -242,12 +274,17 @@ export class Campus implements OnInit {
   }
 
   constructor(private svc: CampusService, private plataformasSvc: PlataformasService) {}
-  ngOnInit(): void { this.config = this.svc.getCopia(); this.plataformas = this.plataformasSvc.getCopia(); }
+  ngOnInit(): void {
+    this.config = this.svc.getCopia();
+    this.plataformas = this.plataformasSvc.getCopia();
+    this.svc.cargarDesdeBackend().subscribe(cfg => { this.config = cfg; });
+    this.plataformasSvc.cargarDesdeBackend().subscribe(list => { this.plataformas = list; });
+  }
   onChange(): void { this.guardado = false; }
 
   guardar(): void {
-    this.svc.guardar(this.config);
-    this.plataformasSvc.guardar(this.plataformas);
+    this.svc.guardar(this.config).subscribe();
+    this.plataformasSvc.guardar(this.plataformas).subscribe();
     this.guardado = true;
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => this.guardado = false, 3000);

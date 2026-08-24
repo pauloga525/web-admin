@@ -1,200 +1,182 @@
 /**
  * @file evento.service.ts
- * @description Servicio centralizado para gestión de eventos institucionales.
- * Maneja persistencia en localStorage y expone observables reactivos.
+ * @description Servicio de eventos conectado al backend NestJS.
+ * Mantiene la misma API pública que la versión localStorage.
  */
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import { Evento, CategoriaEvento, HeroEventos } from '../models';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
+import {
+  Evento, CreateEventoDto, EventosPaginados,
+  CategoriaEvento, HeroEventos,
+} from '../models/api.models';
 
-const KEY_EVENTOS     = 'eventos';
-const KEY_CATEGORIAS  = 'eventos_categorias';
-const KEY_HERO        = 'eventos_hero';
-
-const CATEGORIAS_INICIALES: CategoriaEvento[] = [
-  { id: 1, nombre: 'Académico',    color: 'blue'    },
-  { id: 2, nombre: 'Cultural',     color: 'purple'  },
-  { id: 3, nombre: 'Deportivo',    color: 'green'   },
-  { id: 4, nombre: 'Institucional',color: 'orange'  },
-  { id: 5, nombre: 'Tecnología',   color: 'cyan'    },
+const CATEGORIAS_DEFAULT: CategoriaEvento[] = [
+  { id: 1, nombre: 'Académico', color: 'blue' },
+  { id: 2, nombre: 'Cultural', color: 'yellow' },
+  { id: 3, nombre: 'Pastoral', color: 'green' },
+  { id: 4, nombre: 'Deportes', color: 'red' },
+  { id: 5, nombre: 'Comunidad', color: 'purple' },
 ];
 
-const HERO_INICIAL: HeroEventos = {
-  etiqueta:    'Calendario Institucional',
-  titulo:      'Eventos y Actividades',
-  subtitulo:   'Mantente al día con todo lo que ocurre en nuestra institución',
-  imagenFondo: '',
-};
-
-const EVENTOS_INICIALES: Evento[] = [
-  {
-    id: 1, slug: 'feria-de-ciencias-2026',
-    titulo: 'Feria de Ciencias 2026',
-    descripcionCorta: 'Exposición anual de proyectos científicos de los estudiantes.',
-    descripcionCompleta: 'La Feria de Ciencias es el evento más esperado del año académico. Los estudiantes presentan sus proyectos de investigación ante jurados especializados y la comunidad educativa.',
-    categoria: 'Académico', categoriaColor: 'blue',
-    fecha: '2026-04-15', horaInicio: '08:00', horaFin: '17:00',
-    ubicacion: 'Auditorio Principal', direccion: 'Av. Principal s/n',
-    imagenPrincipal: '', galeria: [],
-    agenda: [
-      { id: 1, hora: '08:00', titulo: 'Apertura e inscripción', descripcion: 'Registro de participantes' },
-      { id: 2, hora: '09:00', titulo: 'Presentación de proyectos', descripcion: 'Ronda de exposiciones' },
-      { id: 3, hora: '15:00', titulo: 'Premiación', descripcion: 'Entrega de reconocimientos' },
-    ],
-    registro: { habilitado: true, labelBoton: 'Registrarse', url: '' },
-    publicado: true, destacado: true,
-    fechaCreacion: new Date().toISOString(),
-  },
-  {
-    id: 2, slug: 'olimpiadas-deportivas',
-    titulo: 'Olimpiadas Deportivas',
-    descripcionCorta: 'Competencias deportivas inter-cursos en múltiples disciplinas.',
-    descripcionCompleta: 'Las Olimpiadas Deportivas reúnen a todos los cursos en competencias de fútbol, básquet, atletismo y más.',
-    categoria: 'Deportivo', categoriaColor: 'green',
-    fecha: '2026-05-20', horaInicio: '07:00', horaFin: '18:00',
-    ubicacion: 'Canchas Deportivas', direccion: '',
-    imagenPrincipal: '', galeria: [],
-    agenda: [],
-    registro: { habilitado: false, labelBoton: 'Inscribirse', url: '' },
-    publicado: true, destacado: false,
-    fechaCreacion: new Date().toISOString(),
-  },
-];
+export interface FiltroEventos {
+  q?: string;
+  categoria?: string;
+  mes?: number;
+  anio?: number;
+  pagina?: number;
+  porPagina?: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class EventoService {
+  private readonly apiUrl = `${environment.apiUrl}/eventos`;
+  private readonly configUrl = `${environment.apiUrl}/configuracion`;
 
-  private eventosSubject    = new BehaviorSubject<Evento[]>(this.cargarEventos());
-  private categoriasSubject = new BehaviorSubject<CategoriaEvento[]>(this.cargarCategorias());
-  private heroSubject       = new BehaviorSubject<HeroEventos>(this.cargarHero());
+  private eventosSubject    = new BehaviorSubject<Evento[]>([]);
+  private categoriasSubject = new BehaviorSubject<CategoriaEvento[]>([]);
+  private heroSubject       = new BehaviorSubject<HeroEventos>({
+    etiqueta: '', titulo: '', subtitulo: '', imagenFondo: '',
+  });
 
   eventos$    = this.eventosSubject.asObservable();
   categorias$ = this.categoriasSubject.asObservable();
   hero$       = this.heroSubject.asObservable();
 
-  // ─── Carga ──────────────────────────────────────────────────────────────────
-
-  private cargarEventos(): Evento[] {
-    const raw = localStorage.getItem(KEY_EVENTOS);
-    return raw ? JSON.parse(raw) : EVENTOS_INICIALES;
+  constructor(private http: HttpClient) {
+    this.cargarTodos();
+    this.cargarCategorias();
+    this.cargarHero();
   }
 
-  private cargarCategorias(): CategoriaEvento[] {
-    const raw = localStorage.getItem(KEY_CATEGORIAS);
-    return raw ? JSON.parse(raw) : CATEGORIAS_INICIALES;
+  // ─── Carga ────────────────────────────────────────────────────────────────
+
+  cargarTodos(): void {
+    this.http.get<Evento[]>(this.apiUrl).subscribe({
+      next:  lista => this.eventosSubject.next(lista),
+      error: err   => console.error('[EventoService] Error al cargar eventos:', err),
+    });
   }
 
-  private cargarHero(): HeroEventos {
-    const raw = localStorage.getItem(KEY_HERO);
-    return raw ? JSON.parse(raw) : HERO_INICIAL;
+  private cargarCategorias(): void {
+    this.http.get<{ clave: string; datos: { categorias: CategoriaEvento[] } }>(
+      `${this.configUrl}/eventos_categorias`
+    ).subscribe({
+      next:  res  => {
+        const categorias = res.datos?.categorias?.length ? res.datos.categorias : CATEGORIAS_DEFAULT;
+        this.categoriasSubject.next(categorias);
+      },
+      error: ()   => this.categoriasSubject.next(CATEGORIAS_DEFAULT),
+    });
   }
 
-  // ─── Persistencia ───────────────────────────────────────────────────────────
-
-  private guardarEventos(lista: Evento[]): void {
-    localStorage.setItem(KEY_EVENTOS, JSON.stringify(lista));
-    this.eventosSubject.next(lista);
+  private cargarHero(): void {
+    this.http.get<{ clave: string; datos: HeroEventos }>(
+      `${this.configUrl}/eventos_hero`
+    ).subscribe({
+      next:  res => this.heroSubject.next(res.datos),
+      error: ()  => {},
+    });
   }
 
-  private guardarCategorias(lista: CategoriaEvento[]): void {
-    localStorage.setItem(KEY_CATEGORIAS, JSON.stringify(lista));
-    this.categoriasSubject.next(lista);
-  }
-
-  // ─── Consultas ──────────────────────────────────────────────────────────────
+  // ─── Consultas ────────────────────────────────────────────────────────────
 
   getAll(): Evento[] { return this.eventosSubject.value; }
 
-  getById(id: number | string): Evento | undefined {
-    const found = this.eventosSubject.value.find(e => e.id == id);
-    return found ? JSON.parse(JSON.stringify(found)) : undefined;
+  getById(id: string): Observable<Evento> {
+    return this.http.get<Evento>(`${this.apiUrl}/${id}`);
   }
 
-  getBySlug(slug: string): Evento | undefined {
-    const found = this.eventosSubject.value.find(e => e.slug === slug);
-    return found ? JSON.parse(JSON.stringify(found)) : undefined;
+  getBySlug(slug: string): Observable<Evento> {
+    return this.http.get<Evento>(`${this.apiUrl}/slug/${slug}`);
   }
 
-  getDestacado(): Evento | undefined {
-    return this.eventosSubject.value.find(e => e.destacado && e.publicado);
+  getDestacado(): Observable<Evento | null> {
+    return this.http.get<Evento>(`${this.apiUrl}/destacado`);
   }
 
-  /** Filtra eventos publicados con búsqueda, categoría, mes y año. */
-  filtrar(params: { q?: string; categoria?: string; mes?: number; anio?: number; pagina?: number; porPagina?: number }): { items: Evento[]; total: number } {
-    let lista = this.eventosSubject.value.filter(e => e.publicado);
-
-    if (params.q) {
-      const q = params.q.toLowerCase();
-      lista = lista.filter(e => e.titulo.toLowerCase().includes(q) || e.descripcionCorta.toLowerCase().includes(q));
-    }
-    if (params.categoria) lista = lista.filter(e => e.categoria === params.categoria);
-    if (params.mes)  lista = lista.filter(e => new Date(e.fecha).getMonth() + 1 === params.mes);
-    if (params.anio) lista = lista.filter(e => new Date(e.fecha).getFullYear() === params.anio);
-
-    lista.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-
-    const total     = lista.length;
-    const porPagina = params.porPagina ?? 6;
-    const pagina    = params.pagina    ?? 1;
-    const items     = lista.slice((pagina - 1) * porPagina, pagina * porPagina);
-    return { items, total };
+  filtrar(params: FiltroEventos): Observable<EventosPaginados> {
+    let p = new HttpParams();
+    if (params.q)         p = p.set('q', params.q);
+    if (params.categoria) p = p.set('categoria', params.categoria);
+    if (params.mes)       p = p.set('mes', params.mes);
+    if (params.anio)      p = p.set('anio', params.anio);
+    if (params.pagina)    p = p.set('pagina', params.pagina);
+    if (params.porPagina) p = p.set('porPagina', params.porPagina);
+    return this.http.get<EventosPaginados>(`${this.apiUrl}/publicos`, { params: p });
   }
-
-  // ─── Mutaciones ─────────────────────────────────────────────────────────────
-
-  agregar(datos: Omit<Evento, 'id' | 'fechaCreacion'>): Evento {
-    const nuevo: Evento = { ...datos, id: Date.now(), fechaCreacion: new Date().toISOString() };
-    this.guardarEventos([...this.getAll(), nuevo]);
-    return nuevo;
-  }
-
-  actualizar(evento: Evento): void {
-    this.guardarEventos(this.getAll().map(e => e.id === evento.id ? evento : e));
-  }
-
-  eliminar(id: number): void {
-    this.guardarEventos(this.getAll().filter(e => e.id !== id));
-  }
-
-  /** Marca un evento como destacado y quita el destacado de los demás. */
-  setDestacado(id: number): void {
-    this.guardarEventos(this.getAll().map(e => ({ ...e, destacado: e.id === id })));
-  }
-
-  togglePublicado(id: number): void {
-    this.guardarEventos(this.getAll().map(e => e.id === id ? { ...e, publicado: !e.publicado } : e));
-  }
-
-  // ─── Categorías ─────────────────────────────────────────────────────────────
 
   getCategorias(): CategoriaEvento[] { return this.categoriasSubject.value; }
+  getHero(): HeroEventos { return this.heroSubject.value; }
+
+  // ─── Mutaciones ───────────────────────────────────────────────────────────
+
+  agregar(datos: CreateEventoDto): Observable<Evento> {
+    return this.http.post<Evento>(this.apiUrl, datos).pipe(
+      tap(() => this.cargarTodos()),
+    );
+  }
+
+  actualizar(evento: Evento): Observable<Evento> {
+    const { _id, createdAt, updatedAt, ...body } = evento;
+    return this.http.put<Evento>(`${this.apiUrl}/${_id}`, body).pipe(
+      tap(() => this.cargarTodos()),
+    );
+  }
+
+  eliminar(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      tap(() => this.cargarTodos()),
+    );
+  }
+
+  setDestacado(id: string): Observable<void> {
+    return this.http.patch<void>(`${this.apiUrl}/${id}/destacado`, {}).pipe(
+      tap(() => this.cargarTodos()),
+    );
+  }
+
+  togglePublicado(id: string): Observable<Evento> {
+    return this.http.patch<Evento>(`${this.apiUrl}/${id}/toggle-publicado`, {}).pipe(
+      tap(() => this.cargarTodos()),
+    );
+  }
+
+  // ─── Categorías (guardadas en configuracion) ──────────────────────────────
 
   agregarCategoria(datos: Omit<CategoriaEvento, 'id'>): void {
     const lista = [...this.getCategorias(), { ...datos, id: Date.now() }];
-    this.guardarCategorias(lista);
+    this._guardarCategorias(lista);
   }
 
   actualizarCategoria(cat: CategoriaEvento): void {
-    this.guardarCategorias(this.getCategorias().map(c => c.id === cat.id ? cat : c));
+    const lista = this.getCategorias().map(c => c.id === cat.id ? cat : c);
+    this._guardarCategorias(lista);
   }
 
   eliminarCategoria(id: number): void {
-    this.guardarCategorias(this.getCategorias().filter(c => c.id !== id));
+    const lista = this.getCategorias().filter(c => c.id !== id);
+    this._guardarCategorias(lista);
   }
 
-  // ─── Hero ───────────────────────────────────────────────────────────────────
+  private _guardarCategorias(lista: CategoriaEvento[]): void {
+    this.http.put(`${this.configUrl}/eventos_categorias`, { datos: { categorias: lista } })
+      .subscribe(() => this.categoriasSubject.next(lista));
+  }
 
-  getHero(): HeroEventos { return this.heroSubject.value; }
+  // ─── Hero ─────────────────────────────────────────────────────────────────
 
   actualizarHero(hero: HeroEventos): void {
-    localStorage.setItem(KEY_HERO, JSON.stringify(hero));
-    this.heroSubject.next(hero);
+    this.http.put(`${this.configUrl}/eventos_hero`, { datos: hero })
+      .subscribe(() => this.heroSubject.next(hero));
   }
 
-  // ─── Utilidades ─────────────────────────────────────────────────────────────
+  // ─── Utilidades ───────────────────────────────────────────────────────────
 
   generarSlug(titulo: string): string {
-    return titulo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    return titulo.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
   }
 }
