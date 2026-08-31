@@ -220,11 +220,14 @@ export class Contacto implements OnInit {
   ];
 
   constructor(private svc: ContactoService) {}
-  ngOnInit(): void { this.config = this.svc.getCopia(); }
+  ngOnInit(): void {
+    this.config = this.svc.getCopia();
+    this.svc.cargarDesdeBackend().subscribe(cfg => { this.config = cfg; });
+  }
   onChange(): void { this.guardado = false; }
 
   guardar(): void {
-    this.svc.guardar(this.config);
+    this.svc.guardar(this.config).subscribe();
     this.guardado = true;
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => this.guardado = false, 3000);

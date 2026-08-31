@@ -137,7 +137,13 @@ export class Dashboard implements OnInit, OnDestroy {
   private homeEditando = false;
 
   ngOnInit(): void {
-    this.kpis = this.kpiService.getCopia();
+    this.subs.add(
+      this.kpiService.kpis$.subscribe(list => {
+        if (!this.editandoKpi) {
+          this.kpis = JSON.parse(JSON.stringify(list));
+        }
+      })
+    );
     this.actividades = this.activityService.getActividadesRecientes();
 
     // Suscripción reactiva: actualiza this.home cuando llega la respuesta del backend
@@ -168,7 +174,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
   // ─── KPIs ──────────────────────────────────────────────────────────────────
   guardarKpis(): void {
-    this.kpiService.guardar(this.kpis);
+    this.kpiService.guardar(this.kpis).subscribe();
     this.editandoKpi = null;
     this.guardadoKpis = true;
     if (this.kpiTimer) clearTimeout(this.kpiTimer);

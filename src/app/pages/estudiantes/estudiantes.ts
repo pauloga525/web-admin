@@ -1,7 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { EstudiantesPageService, EstudiantesPageConfig, GaleriaImagen, Club, Promocion, Logro, Instalacion } from '../../services/estudiantes-page.service';
+import { EstudiantesPageService, EstudiantesPageConfig, GaleriaImagen, Club, Promocion, Instalacion } from '../../services/estudiantes-page.service';
+import { LogrosApiService, LogroApi } from '../../services/logros-api.service';
 import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 import { PromocioneManagerComponent } from '../../components/promociones-manager/promociones-manager.component';
 import { Subscription } from 'rxjs';
@@ -138,26 +139,45 @@ type Tab = 'hero' | 'galeria' | 'clubes' | 'promociones' | 'logros' | 'instalaci
         </div>
         <hr class="border-slate-100 dark:border-slate-800" />
         <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Logros</h3>
+          <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Logros ({{logros.length}})</h3>
           <button type="button" (click)="agregarLogro()" class="text-xs text-primary hover:underline flex items-center gap-1"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Agregar</button>
         </div>
+        <p class="text-xs text-slate-400 dark:text-slate-500">Estos logros son la fuente real de la página pública "Logros Estudiantiles" — marca "Destacado" para que aparezcan también aquí, en el teaser de Alumnos.</p>
+        @if (errorLogro) { <p class="text-xs text-red-500">{{errorLogro}}</p> }
         <div class="space-y-4">
-          @for (l of config.logros; track trackById($index, l)) {
+          @for (l of logros; track $index) {
           <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
             <div class="flex items-center gap-2">
-              <input [(ngModel)]="l.badge" (ngModelChange)="onChange()" placeholder="Badge (ej: 1er Lugar)" class="w-32 input-field text-xs font-bold text-primary" />
-              <input [(ngModel)]="l.date" (ngModelChange)="onChange()" placeholder="Fecha" class="w-28 input-field text-xs" />
-              <input [(ngModel)]="l.title" (ngModelChange)="onChange()" placeholder="Título" class="flex-1 input-field font-semibold" />
-              <button type="button" (click)="eliminarLogro(l.id)" class="text-slate-300 hover:text-red-500 transition shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg></button>
+              <input [(ngModel)]="l.badge" placeholder="Badge (ej: 1er Lugar)" class="w-32 input-field text-xs font-bold text-primary" />
+              <input [(ngModel)]="l.date" placeholder="Fecha" class="w-28 input-field text-xs" />
+              <input [(ngModel)]="l.title" placeholder="Título" class="flex-1 input-field font-semibold" />
+              <button type="button" (click)="eliminarLogro($index)" class="text-slate-300 hover:text-red-500 transition shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg></button>
             </div>
-            <textarea [(ngModel)]="l.description" (ngModelChange)="onChange()" rows="2" placeholder="Descripción" class="w-full input-field resize-none text-sm"></textarea>
+            <textarea [(ngModel)]="l.description" rows="2" placeholder="Descripción" class="w-full input-field resize-none text-sm"></textarea>
             <div class="flex items-center gap-3">
               <div class="w-16 h-12 rounded-lg shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                 @if (l.image) { <img [src]="l.image" [alt]="l.title" class="w-full h-full object-cover" /> }
               </div>
-              <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="l.image" (ngModelChange)="onChange()" placeholder="URL imagen" [showPreview]="false" />
+              <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="l.image" placeholder="URL imagen" [showPreview]="false" />
+              <input [(ngModel)]="l.category" placeholder="Categoría" class="w-32 input-field text-xs" />
+              <label class="flex items-center gap-1.5 cursor-pointer shrink-0">
+                <input type="checkbox" [(ngModel)]="l.featured" class="rounded" />
+                <span class="text-xs text-slate-500">Destacado</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer shrink-0">
+                <input type="checkbox" [(ngModel)]="l.publicado" class="rounded" />
+                <span class="text-xs text-slate-500">Publicado</span>
+              </label>
+            </div>
+            <div class="flex justify-end">
+              <button type="button" (click)="guardarLogro($index)" class="text-xs font-semibold text-primary hover:underline">
+                {{ l._id ? 'Guardar cambios' : 'Crear logro' }}
+              </button>
             </div>
           </div>
+          }
+          @if (!logros.length) {
+            <p class="text-sm text-slate-400 italic text-center py-8">Sin logros — agrega uno arriba.</p>
           }
         </div>
       </div>
@@ -202,6 +222,8 @@ type Tab = 'hero' | 'galeria' | 'clubes' | 'promociones' | 'logros' | 'instalaci
 export class Estudiantes implements OnInit, OnDestroy {
 
   config: EstudiantesPageConfig;
+  logros: LogroApi[] = [];
+  errorLogro = '';
   tabActiva: Tab = 'hero';
   guardado = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -216,13 +238,21 @@ export class Estudiantes implements OnInit, OnDestroy {
     { id: 'instalaciones', label: 'Instalaciones' },
   ];
 
-  constructor(private svc: EstudiantesPageService) {
+  constructor(
+    private svc: EstudiantesPageService,
+    private logrosApi: LogrosApiService,
+  ) {
     this.config = this.svc.getCopia();
   }
   ngOnInit(): void {
     this.sub = this.svc.config$.subscribe(config => {
       this.config = JSON.parse(JSON.stringify(config));
     });
+    this.cargarLogros();
+  }
+
+  private cargarLogros(): void {
+    this.logrosApi.list().subscribe(list => this.logros = list);
   }
 
   ngOnDestroy(): void {
@@ -257,8 +287,33 @@ export class Estudiantes implements OnInit, OnDestroy {
     this.onChange();
   }
 
-  agregarLogro(): void      { this.config.logros.push({ id: this.svc.nextId(), badge: '', date: '', title: '', description: '', image: '' }); this.onChange(); }
-  eliminarLogro(id: number): void   { this.config.logros = this.config.logros.filter(l => l.id !== id); this.onChange(); }
+  agregarLogro(): void {
+    this.logros.push({
+      _id: '', badge: '', badgeClass: '', date: '', title: '', category: '',
+      description: '', image: '', featured: false, publicado: true,
+      createdAt: '', updatedAt: '',
+    });
+  }
+
+  guardarLogro(index: number): void {
+    this.errorLogro = '';
+    const l = this.logros[index];
+    if (!l.title) { this.errorLogro = 'El título es obligatorio.'; return; }
+    const dto = { badge: l.badge, badgeClass: l.badgeClass, date: l.date, title: l.title, category: l.category, description: l.description, image: l.image, featured: l.featured, publicado: l.publicado };
+    const req = l._id ? this.logrosApi.update(l._id, dto) : this.logrosApi.create(dto);
+    req.subscribe({
+      next: () => this.cargarLogros(),
+      error: () => { this.errorLogro = 'No se pudo guardar el logro.'; },
+    });
+  }
+
+  eliminarLogro(index: number): void {
+    const l = this.logros[index];
+    if (!l._id) { this.logros.splice(index, 1); return; }
+    this.logrosApi.delete(l._id).subscribe({
+      next: () => this.cargarLogros(),
+    });
+  }
 
   agregarInstalacion(): void { this.config.instalaciones.push({ id: this.svc.nextId(), title: '', description: '', image: '' }); this.onChange(); }
   eliminarInstalacion(id: number): void { this.config.instalaciones = this.config.instalaciones.filter(i => i.id !== id); this.onChange(); }

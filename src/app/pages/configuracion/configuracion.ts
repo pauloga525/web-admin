@@ -11,7 +11,8 @@ import { UserService, UserProfile } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
 import { AvatarComponent, AVATARES } from '../../components/avatar/avatar.component';
-import { UsersService, AppUser, UserRole, ROLES } from '../../services/users.service';
+import { UsersApiService, ROLES, CreateUserDto } from '../../services/users-api.service';
+import { AppUser, UserRole } from '../../models/api.models';
 
 type Tab = 'perfil' | 'cuenta' | 'seguridad' | 'apariencia' | 'usuarios';
 
@@ -88,8 +89,9 @@ export class Configuracion implements OnInit {
   usuarios: AppUser[] = [];
   usuarioSeleccionado: AppUser | null = null;
   modalUsuario = false;
-  editandoUsuario: Partial<AppUser> & { id?: number } = {};
+  editandoUsuario: Partial<CreateUserDto> & { _id?: string; password?: string } = {};
   confirmarEliminarUsuario: AppUser | null = null;
+  errorUsuario = '';
   readonly roles = ROLES;
 
   constructor(
@@ -97,13 +99,20 @@ export class Configuracion implements OnInit {
     private sanitizer: DomSanitizer,
     public  authService: AuthService,
     public  themeService: ThemeService,
-    public  usersService: UsersService,
+    public  usersService: UsersApiService,
   ) {}
 
   ngOnInit(): void {
     this.perfil = this.userService.getCopia();
     this.avatarSeleccionado = this.perfil.avatar;
-    this.usuarios = this.usersService.getCopia();
+    this.cargarUsuarios();
+  }
+
+  private cargarUsuarios(): void {
+    this.usersService.list().subscribe({
+      next: list => this.usuarios = list,
+      error: () => { this.usuarios = []; },
+    });
   }
 
   getIniciales(): string { return this.userService.getIniciales(); }
@@ -145,14 +154,18 @@ export class Configuracion implements OnInit {
 
   guardarPassword(): void {
     this.errorPassword = '';
-    const actual = this.userService.get().password;
-    if (this.passActual !== actual) { this.errorPassword = 'La contraseña actual no es correcta.'; return; }
-    if (this.passNueva.length < 4)  { this.errorPassword = 'La nueva contraseña debe tener al menos 4 caracteres.'; return; }
+    if (this.passNueva.length < 6)  { this.errorPassword = 'La nueva contraseña debe tener al menos 6 caracteres.'; return; }
     if (this.passNueva !== this.passConfirmar) { this.errorPassword = 'Las contraseñas nuevas no coinciden.'; return; }
-    this.userService.guardar({ ...this.userService.get(), password: this.passNueva });
-    this.passActual = this.passNueva = this.passConfirmar = '';
-    this.guardadoPassword = true;
-    setTimeout(() => this.guardadoPassword = false, 3000);
+    this.userService.cambiarPassword(this.passActual, this.passNueva).subscribe({
+      next: () => {
+        this.passActual = this.passNueva = this.passConfirmar = '';
+        this.guardadoPassword = true;
+        setTimeout(() => this.guardadoPassword = false, 3000);
+      },
+      error: (err) => {
+        this.errorPassword = err?.error?.detail ?? 'No se pudo cambiar la contraseña. Intenta de nuevo.';
+      },
+    });
   }
 
   get passwordStrength(): 'weak' | 'medium' | 'strong' {
@@ -184,52 +197,58 @@ export class Configuracion implements OnInit {
   }
 
   abrirNuevoUsuario(): void {
-    this.editandoUsuario = { nombre: '', apellido: '', email: '', rol: 'viewer', status: 'active' };
+    this.errorUsuario = '';
+    this.editandoUsuario = { nombre: '', apellido: '', username: '', email: '', password: '', rol: 'viewer', status: 'active' };
     this.modalUsuario = true;
   }
 
   abrirEditarUsuario(u: AppUser): void {
-    this.editandoUsuario = { ...u };
+    this.errorUsuario = '';
+    this.editandoUsuario = { _id: u._id, nombre: u.nombre, apellido: u.apellido, username: u.username, email: u.email, rol: u.rol, status: u.status, password: '' };
     this.modalUsuario = true;
   }
 
   guardarUsuario(): void {
     const u = this.editandoUsuario;
     if (!u.nombre || !u.email || !u.rol) return;
-    if (u.id) {
-      // editar
-      const idx = this.usuarios.findIndex(x => x.id === u.id);
-      if (idx !== -1) this.usuarios[idx] = { ...this.usuarios[idx], ...u } as AppUser;
+    this.errorUsuario = '';
+
+    if (u._id) {
+      // editar — solo envía password si se escribió una nueva
+      const { _id, password, ...resto } = u;
+      const dto = password ? { ...resto, password } : resto;
+      this.usersService.update(_id!, dto).subscribe({
+        next: () => { this.cargarUsuarios(); this.modalUsuario = false; this.editandoUsuario = {}; },
+        error: (err) => { this.errorUsuario = err?.error?.detail ?? 'No se pudo actualizar el usuario.'; },
+      });
     } else {
-      // nuevo
-      const nuevo: AppUser = {
-        id:       this.usersService.nextId(),
-        nombre:   u.nombre!,
-        apellido: u.apellido ?? '',
-        email:    u.email!,
-        rol:      u.rol as UserRole,
-        status:   u.status as AppUser['status'] ?? 'active',
-        color:    this.usersService.nextColor(this.usuarios),
-      };
-      this.usuarios.push(nuevo);
+      if (!u.username || !u.password) { this.errorUsuario = 'Usuario y contraseña son obligatorios.'; return; }
+      this.usersService.create(u as CreateUserDto).subscribe({
+        next: () => { this.cargarUsuarios(); this.modalUsuario = false; this.editandoUsuario = {}; },
+        error: (err) => { this.errorUsuario = err?.error?.detail ?? 'No se pudo crear el usuario.'; },
+      });
     }
-    this.usersService.guardar(this.usuarios);
-    this.modalUsuario = false;
-    this.editandoUsuario = {};
   }
 
   pedirEliminarUsuario(u: AppUser): void { this.confirmarEliminarUsuario = u; }
 
   confirmarEliminar(): void {
     if (!this.confirmarEliminarUsuario) return;
-    this.usuarios = this.usuarios.filter(u => u.id !== this.confirmarEliminarUsuario!.id);
-    if (this.usuarioSeleccionado?.id === this.confirmarEliminarUsuario.id) this.usuarioSeleccionado = null;
-    this.usersService.guardar(this.usuarios);
-    this.confirmarEliminarUsuario = null;
+    const id = this.confirmarEliminarUsuario._id;
+    this.usersService.delete(id).subscribe({
+      next: () => {
+        if (this.usuarioSeleccionado?._id === id) this.usuarioSeleccionado = null;
+        this.cargarUsuarios();
+        this.confirmarEliminarUsuario = null;
+      },
+      error: () => { this.confirmarEliminarUsuario = null; },
+    });
   }
 
   toggleStatus(u: AppUser): void {
-    u.status = u.status === 'active' ? 'inactive' : 'active';
-    this.usersService.guardar(this.usuarios);
+    const nuevoStatus = u.status === 'active' ? 'inactive' : 'active';
+    this.usersService.update(u._id, { status: nuevoStatus }).subscribe({
+      next: () => this.cargarUsuarios(),
+    });
   }
 }

@@ -12,7 +12,6 @@ import {
   HomeConfig, HomeBoton, HomePorQueItem, HomeNivel,
   HomeLogo, HomeCaracteristica, HomeEnlace, HomeFooterColumna,
 } from '../models';
-import { environment } from '../../environments/environment';
 
 const KEY = 'home_config';
 
@@ -117,8 +116,6 @@ export class HomeService {
       }
       // Merge with DEFAULT so all required fields are always present
       resolved = { ...DEFAULT, ...resolved, hero: { ...DEFAULT.hero, ...(resolved.hero ?? {}) } };
-      // Normalize GridFS URLs to current apiUrl (fixes images saved with a different host/IP)
-      resolved = this.normalizeGridfsUrls(resolved);
       localStorage.setItem(KEY, JSON.stringify(resolved));
       this.subject.next(resolved);
     });
@@ -141,22 +138,5 @@ export class HomeService {
 
   getCopia(): HomeConfig { return JSON.parse(JSON.stringify(this.subject.value)); }
   nextId(): number { return Date.now(); }
-
-  private normalizeGridfsUrls<T>(obj: T): T {
-    if (typeof obj === 'string') {
-      if (obj.includes('/api/v1/imagenes/gridfs/')) {
-        const id = obj.split('/api/v1/imagenes/gridfs/').pop();
-        return `${environment.apiUrl}/imagenes/gridfs/${id}` as unknown as T;
-      }
-      return obj;
-    }
-    if (Array.isArray(obj)) return obj.map(i => this.normalizeGridfsUrls(i)) as unknown as T;
-    if (obj && typeof obj === 'object') {
-      const result: Record<string, unknown> = {};
-      for (const k in obj) result[k] = this.normalizeGridfsUrls((obj as Record<string, unknown>)[k]);
-      return result as T;
-    }
-    return obj;
-  }
 }
 

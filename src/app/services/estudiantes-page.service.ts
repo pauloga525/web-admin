@@ -5,7 +5,6 @@ import { ConfiguracionApiService } from './configuracion-api.service';
 export interface GaleriaImagen  { id: number; url: string; alt: string; caption: string; }
 export interface Club           { id: number; icon: string; title: string; description: string; }
 export interface Promocion      { id: number; classOf: string; cursos?: { id: number; name: string; image: string; url?: string }[]; url?: string; }
-export interface Logro          { id: number; badge: string; date: string; title: string; description: string; image: string; }
 export interface Instalacion    { id: number; title: string; description: string; image: string; }
 
 export interface EstudiantesPageConfig {
@@ -28,10 +27,9 @@ export interface EstudiantesPageConfig {
   promocionesTitulo:       string;
   promocionesDescripcion:  string;
   promociones:             Promocion[];
-  // Logros
+  // Logros (título/URL de la sección — los ítems en sí viven en la colección /logros)
   logrosTitulo:     string;
   logrosUrl:        string;
-  logros:           Logro[];
   // Instalaciones
   instalacionesTitulo: string;
   instalaciones:       Instalacion[];
@@ -74,11 +72,7 @@ const DEFAULT: EstudiantesPageConfig = {
   ],
 
   logrosTitulo: 'Logros Estudiantiles',
-  logrosUrl:    '',
-  logros: [
-    { id: 1, badge: '1er Lugar', date: 'Enero 2024', title: 'Olimpiada Nacional de Robótica', description: 'Nuestros estudiantes obtuvieron el primer lugar en la competencia nacional.', image: '' },
-    { id: 2, badge: 'Destacado', date: 'Marzo 2024', title: 'Feria de Ciencias Regional',     description: 'Tres proyectos seleccionados para representar a la institución.',              image: '' },
-  ],
+  logrosUrl:    '/estudiantes/logros',
 
   instalacionesTitulo: 'Instalaciones de Clase Mundial',
   instalaciones: [
@@ -131,7 +125,6 @@ export class EstudiantesPageService {
       ...(config ?? {}),
       galeria: config?.galeria ?? this.clone(DEFAULT.galeria),
       clubes: config?.clubes ?? this.clone(DEFAULT.clubes),
-      logros: config?.logros ?? this.clone(DEFAULT.logros),
       instalaciones: config?.instalaciones ?? this.clone(DEFAULT.instalaciones),
     } as EstudiantesPageConfig;
 

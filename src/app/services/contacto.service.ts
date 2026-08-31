@@ -1,4 +1,12 @@
+/**
+ * @file contacto.service.ts
+ * @description Gestiona el contenido de la página pública "Contacto".
+ * Persiste en el backend (clave: 'contacto') con fallback a localStorage.
+ */
 import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
+import { ConfiguracionApiService } from './configuracion-api.service';
 
 export interface ContactoAsunto {
   id:            number;
@@ -72,11 +80,38 @@ const DEFAULT: ContactoConfig = {
 
 @Injectable({ providedIn: 'root' })
 export class ContactoService {
-  get(): ContactoConfig {
-    const raw = localStorage.getItem(KEY);
-    return raw ? { ...DEFAULT, ...JSON.parse(raw) } : { ...DEFAULT };
+
+  private subject = new BehaviorSubject<ContactoConfig>({ ...DEFAULT });
+  config$ = this.subject.asObservable();
+
+  constructor(private configApi: ConfiguracionApiService) {
+    this.configApi.get<ContactoConfig>('contacto').pipe(
+      catchError(err => of(err?.status === 404 ? { ...DEFAULT } : this.cargarLocal()))
+    ).subscribe(c => this.subject.next(c ?? DEFAULT));
   }
-  getCopia(): ContactoConfig { return JSON.parse(JSON.stringify(this.get())); }
-  guardar(c: ContactoConfig): void { localStorage.setItem(KEY, JSON.stringify(c)); }
+
+  private cargarLocal(): ContactoConfig {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? { ...DEFAULT, ...JSON.parse(raw) } : { ...DEFAULT };
+    } catch { return { ...DEFAULT }; }
+  }
+
+  get(): ContactoConfig { return this.subject.value; }
+  getCopia(): ContactoConfig { return JSON.parse(JSON.stringify(this.subject.value)); }
+
+  guardar(c: ContactoConfig): Observable<void> {
+    return this.configApi.guardar('contacto', c).pipe(
+      tap(() => this.subject.next(c))
+    );
+  }
+
+  cargarDesdeBackend(): Observable<ContactoConfig> {
+    return this.configApi.get<ContactoConfig>('contacto').pipe(
+      tap(c => this.subject.next(c)),
+      catchError(() => of(this.subject.value))
+    );
+  }
+
   nextId(): number { return Date.now(); }
 }

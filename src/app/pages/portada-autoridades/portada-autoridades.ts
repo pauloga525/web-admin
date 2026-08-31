@@ -2,11 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AutoridadesPageService, AutoridadesPageConfig } from '../../services/autoridades-page.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
 @Component({
   selector: 'app-portada-autoridades',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
   templateUrl: './portada-autoridades.html',
 })
 export class PortadaAutoridades implements OnInit {

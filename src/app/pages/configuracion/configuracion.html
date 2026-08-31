@@ -400,13 +400,13 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-          @for (u of usuarios; track u.id) {
+          @for (u of usuarios; track u._id) {
           <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer"
-              [class.bg-primary/5]="usuarioSeleccionado?.id === u.id"
+              [class.bg-primary/5]="usuarioSeleccionado?._id === u._id"
               (click)="usuarioSeleccionado = u">
             <td class="px-5 py-3.5">
               <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" [class]="u.color">
+                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" [class]="usersService.colorFor(u)">
                   {{usersService.getIniciales(u)}}
                 </div>
                 <div>
@@ -460,7 +460,7 @@
       } @else {
       <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-5">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0" [class]="usuarioSeleccionado.color">
+          <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0" [class]="usersService.colorFor(usuarioSeleccionado)">
             {{usersService.getIniciales(usuarioSeleccionado)}}
           </div>
           <div>
@@ -502,7 +502,7 @@
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" (click)="modalUsuario = false">
   <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 animate-[fadeIn_.2s_ease_forwards]" (click)="$event.stopPropagation()">
     <h2 class="text-base font-bold text-slate-800 dark:text-white">
-      {{editandoUsuario.id ? 'Editar usuario' : 'Nuevo usuario'}}
+      {{editandoUsuario._id ? 'Editar usuario' : 'Nuevo usuario'}}
     </h2>
     <div class="grid grid-cols-2 gap-3">
       <div>
@@ -513,9 +513,19 @@
         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Apellido</label>
         <input [(ngModel)]="editandoUsuario.apellido" placeholder="Apellido" class="input-field" />
       </div>
-      <div class="col-span-2">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Usuario (login)</label>
+        <input [(ngModel)]="editandoUsuario.username" placeholder="jperez" class="input-field" [disabled]="!!editandoUsuario._id" />
+      </div>
+      <div>
         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Email</label>
         <input [(ngModel)]="editandoUsuario.email" type="email" placeholder="correo@uets.edu.ec" class="input-field" />
+      </div>
+      <div class="col-span-2">
+        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+          {{editandoUsuario._id ? 'Nueva contraseña (dejar en blanco para no cambiarla)' : 'Contraseña'}}
+        </label>
+        <input [(ngModel)]="editandoUsuario.password" type="password" placeholder="••••••" class="input-field" />
       </div>
       <div>
         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Rol</label>
@@ -533,6 +543,9 @@
         </select>
       </div>
     </div>
+    @if (errorUsuario) {
+      <p class="text-xs text-red-500">{{errorUsuario}}</p>
+    }
     <div class="flex justify-end gap-3 pt-2">
       <button type="button" (click)="modalUsuario = false"
         class="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
@@ -541,7 +554,7 @@
       <button type="button" (click)="guardarUsuario()"
         [disabled]="!editandoUsuario.nombre || !editandoUsuario.email"
         class="px-5 py-2 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
-        {{editandoUsuario.id ? 'Guardar cambios' : 'Crear usuario'}}
+        {{editandoUsuario._id ? 'Guardar cambios' : 'Crear usuario'}}
       </button>
     </div>
   </div>

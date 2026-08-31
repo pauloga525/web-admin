@@ -1,26 +1,24 @@
-﻿import { Injectable } from '@angular/core';
+/**
+ * @file instructivos.service.ts
+ * @description Gestiona la configuración de página (hero, categorías) de "Instructivos".
+ * Persiste en el backend (clave: 'instructivos_page') con fallback a localStorage.
+ * Los instructivos en sí se gestionan como /recursos (tipo: 'pdf' | 'video'), ver RecursosApiService.
+ */
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { map, tap, catchError } from 'rxjs/operators';
+import { ConfiguracionApiService } from './configuracion-api.service';
 
 export interface InstructivoCategoria { id: number; icon: string; name: string; }
-export interface Instructivo {
-  id:          number;
-  title:       string;
-  description: string;
-  type:        'pdf' | 'video';
-  categoria:   string;
-  fecha:       string;
-  url:         string;
-  buttonText:  string;
-}
 
 export interface InstructivosConfig {
   heroTitulo:      string;
   heroDescripcion: string;
   soporteUrl:      string;
   categorias:      InstructivoCategoria[];
-  instructivos:    Instructivo[];
 }
 
-const KEY = 'edu_instructivos';
+const KEY = 'edu_instructivos_page';
 
 const DEFAULT: InstructivosConfig = {
   heroTitulo:      'Instructivos y Tutoriales',
@@ -32,22 +30,61 @@ const DEFAULT: InstructivosConfig = {
     { id: 3, icon: 'assignment',   name: 'Trámites y Secretaría' },
     { id: 4, icon: 'library_books',name: 'Biblioteca Digital'    },
   ],
-  instructivos: [
-    { id: 1, title: 'Cómo acceder al Aula Virtual',        description: 'Guía paso a paso para ingresar a la plataforma Moodle y navegar por tus cursos.',          type: 'pdf',   categoria: 'Plataforma Educativa',  fecha: '2024-01-15', url: '', buttonText: 'Descargar PDF'    },
-    { id: 2, title: 'Tutorial: Entrega de tareas en Moodle', description: 'Aprende a subir y entregar tus actividades correctamente en la plataforma virtual.',       type: 'video', categoria: 'Plataforma Educativa',  fecha: '2024-01-20', url: '', buttonText: 'Ver Tutorial'     },
-    { id: 3, title: 'Solicitud de certificados en línea',  description: 'Proceso para solicitar certificados de matrícula y notas desde el portal estudiantil.',      type: 'pdf',   categoria: 'Trámites y Secretaría', fecha: '2024-02-01', url: '', buttonText: 'Descargar PDF'    },
-    { id: 4, title: 'Acceso a la Biblioteca Digital',      description: 'Cómo buscar y descargar libros y artículos desde el repositorio institucional.',             type: 'video', categoria: 'Biblioteca Digital',    fecha: '2024-02-10', url: '', buttonText: 'Ver Tutorial'     },
-  ],
 };
 
 @Injectable({ providedIn: 'root' })
 export class InstructivosService {
-  get(): InstructivosConfig {
-    const raw = localStorage.getItem(KEY);
-    return raw ? { ...DEFAULT, ...JSON.parse(raw) } : { ...DEFAULT };
-  }
-  getCopia(): InstructivosConfig { return JSON.parse(JSON.stringify(this.get())); }
-  guardar(c: InstructivosConfig): void { localStorage.setItem(KEY, JSON.stringify(c)); }
-  nextId(): number { return Date.now(); }
-}
 
+  private subject = new BehaviorSubject<InstructivosConfig>(this.clone(DEFAULT));
+  config$ = this.subject.asObservable();
+
+  constructor(private configApi: ConfiguracionApiService) {
+    this.configApi.get<Partial<InstructivosConfig>>('instructivos_page').pipe(
+      map(c => this.mergeConDefault(c)),
+      catchError(err => of(err?.status === 404 ? this.clone(DEFAULT) : this.cargarLocal()))
+    ).subscribe(c => this.subject.next(c));
+  }
+
+  /**
+   * Combina lo que venga del backend con DEFAULT — necesario porque un documento
+   * guardado antes de agregar un campo nuevo no lo tendrá, y sin este merge
+   * llegaría como `undefined` y rompería cualquier `.length`/`.push` del template.
+   */
+  private mergeConDefault(c?: Partial<InstructivosConfig> | null): InstructivosConfig {
+    return {
+      ...this.clone(DEFAULT),
+      ...(c ?? {}),
+      categorias: c?.categorias ?? this.clone(DEFAULT.categorias),
+    };
+  }
+
+  private cargarLocal(): InstructivosConfig {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? this.mergeConDefault(JSON.parse(raw)) : this.clone(DEFAULT);
+    } catch { return this.clone(DEFAULT); }
+  }
+
+  get(): InstructivosConfig { return this.subject.value; }
+  getCopia(): InstructivosConfig { return this.clone(this.subject.value); }
+
+  guardar(c: InstructivosConfig): Observable<void> {
+    return this.configApi.guardar('instructivos_page', c).pipe(
+      tap(() => this.subject.next(c))
+    );
+  }
+
+  cargarDesdeBackend(): Observable<InstructivosConfig> {
+    return this.configApi.get<Partial<InstructivosConfig>>('instructivos_page').pipe(
+      map(c => this.mergeConDefault(c)),
+      tap(c => this.subject.next(c)),
+      catchError(() => of(this.subject.value))
+    );
+  }
+
+  nextId(): number { return Date.now(); }
+
+  private clone<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value));
+  }
+}

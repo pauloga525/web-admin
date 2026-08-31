@@ -11,14 +11,14 @@ import { EventoService } from '../../../services/evento.service';
 import { ActivityService } from '../../../services/activity';
 import { Evento, Tab, AgendaItem, CategoriaEvento } from '../../../models/api.models';
 import { Subscription } from 'rxjs';
-import { compressImageFileToDataUrl } from '../../../utils/image-compression';
+import { ImageUrlInputComponent } from '../../../components/image-url-input/image-url-input.component';
 
 @Component({
   selector: 'app-evento-editor',
   standalone: true,
   templateUrl: './evento-editor.html',
   styleUrl: './evento-editor.css',
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, ImageUrlInputComponent],
 })
 export class EventoEditor implements OnInit, OnDestroy {
 
@@ -27,7 +27,6 @@ export class EventoEditor implements OnInit, OnDestroy {
   tabActiva  = 'general';
   guardado   = false;
   confirmarEliminar = false;
-  cargandoImagen = false;
 
   categorias: CategoriaEvento[] = [];
   private subs = new Subscription();
@@ -120,28 +119,10 @@ export class EventoEditor implements OnInit, OnDestroy {
     this.onCambio();
   }
 
-  async procesarArchivoImagen(event: Event, index: number): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    this.cargandoImagen = true;
-    try {
-      const dataUrl = await compressImageFileToDataUrl(file, {
-        maxWidth: 1600,
-        maxHeight: 1600,
-        maxBytes: 900 * 1024,
-      });
-      if (this.evento?.galeria) {
-        this.evento.galeria[index] = dataUrl;
-        this.onCambio();
-      }
-    } catch {
-      alert('Error al leer el archivo');
-    } finally {
-      this.cargandoImagen = false;
-      input.value = '';
-    }
+  actualizarImagenGaleria(index: number, url: string): void {
+    if (!this.evento?.galeria) return;
+    this.evento.galeria[index] = url;
+    this.onCambio();
   }
 
   trackByIndex(i: number): number { return i; }

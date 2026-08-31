@@ -2,8 +2,12 @@
  * @file kpi.service.ts
  * @description KPI cards del dashboard. Editables manualmente y preparados
  * para conectarse a una API en el futuro (campo `apiKey` para mapeo).
+ * Persiste en el backend (clave: 'kpis') con fallback a localStorage.
  */
 import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { tap, catchError } from 'rxjs/operators';
+import { ConfiguracionApiService } from './configuracion-api.service';
 
 export interface KpiCard {
   id:       string;   // identificador único
@@ -27,10 +31,29 @@ const DEFAULT: KpiCard[] = [
 
 @Injectable({ providedIn: 'root' })
 export class KpiService {
-  get(): KpiCard[] {
-    const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : DEFAULT.map(k => ({ ...k }));
+
+  private subject = new BehaviorSubject<KpiCard[]>(DEFAULT.map(k => ({ ...k })));
+  kpis$ = this.subject.asObservable();
+
+  constructor(private configApi: ConfiguracionApiService) {
+    this.configApi.get<KpiCard[]>('kpis').pipe(
+      catchError(err => of(err?.status === 404 ? DEFAULT.map(k => ({ ...k })) : this.cargarLocal()))
+    ).subscribe(list => this.subject.next(list ?? DEFAULT.map(k => ({ ...k }))));
   }
-  getCopia(): KpiCard[] { return JSON.parse(JSON.stringify(this.get())); }
-  guardar(list: KpiCard[]): void { localStorage.setItem(KEY, JSON.stringify(list)); }
+
+  private cargarLocal(): KpiCard[] {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? JSON.parse(raw) : DEFAULT.map(k => ({ ...k }));
+    } catch { return DEFAULT.map(k => ({ ...k })); }
+  }
+
+  get(): KpiCard[] { return this.subject.value; }
+  getCopia(): KpiCard[] { return JSON.parse(JSON.stringify(this.subject.value)); }
+
+  guardar(list: KpiCard[]): Observable<void> {
+    return this.configApi.guardar('kpis', list).pipe(
+      tap(() => this.subject.next(list))
+    );
+  }
 }

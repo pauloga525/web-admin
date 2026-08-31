@@ -1,19 +1,18 @@
+/**
+ * @file uniformes.service.ts
+ * @description Gestiona la configuración de página (hero, tarjetas) de "Uniformes".
+ * Persiste en el backend (clave: 'uniformes_page') con fallback a localStorage.
+ * Los uniformes en sí se gestionan como /uniformes, ver UniformesApiService.
+ */
 import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { map, tap, catchError } from 'rxjs/operators';
+import { ConfiguracionApiService } from './configuracion-api.service';
 
-export interface UniformeImagen {
-  id:  number;
-  url: string;
-  alt: string;
-}
-
-export interface Uniforme {
-  id:           number;
-  name:         string;
-  category:     string;
-  description:  string;
-  price:        string;
-  availability: string;
-  images:       UniformeImagen[];
+export interface CaracteristicaUniforme {
+  id:          number;
+  titulo:      string;
+  descripcion: string;
 }
 
 export interface UniformesConfig {
@@ -29,11 +28,11 @@ export interface UniformesConfig {
   card3Valor:      string;
   card3Titulo:     string;
   card3Desc:       string;
-  // Uniformes
-  uniformes:       Uniforme[];
+  // Sección "Características" (los 6 bloques con check al final de la página)
+  caracteristicas: CaracteristicaUniforme[];
 }
 
-const KEY = 'edu_uniformes';
+const KEY = 'edu_uniformes_page';
 
 const DEFAULT: UniformesConfig = {
   heroTitulo:      'Uniformes Escolares',
@@ -46,52 +45,67 @@ const DEFAULT: UniformesConfig = {
   card3Valor:      '100%',
   card3Titulo:     'Calidad Garantizada',
   card3Desc:       'Tela de primera calidad y durabilidad',
-  uniformes: [
-    {
-      id: 1,
-      name:         'Uniforme Diario Masculino',
-      category:     'Diario',
-      description:  'Uniforme de uso diario para estudiantes masculinos. Incluye pantalón azul marino, camisa blanca con logo bordado y cinturón negro.',
-      price:        '$45.00',
-      availability: 'En stock',
-      images: [
-        { id: 1, url: '', alt: 'Vista frontal' },
-        { id: 2, url: '', alt: 'Vista lateral' },
-      ],
-    },
-    {
-      id: 2,
-      name:         'Uniforme Diario Femenino',
-      category:     'Diario',
-      description:  'Uniforme de uso diario para estudiantes femeninas. Incluye falda azul marino, blusa blanca con logo bordado y medias azules.',
-      price:        '$42.00',
-      availability: 'En stock',
-      images: [
-        { id: 1, url: '', alt: 'Vista frontal' },
-        { id: 2, url: '', alt: 'Vista lateral' },
-      ],
-    },
-    {
-      id: 3,
-      name:         'Uniforme Deportivo',
-      category:     'Deportivo',
-      description:  'Conjunto deportivo para educación física y actividades extracurriculares. Incluye camiseta, pantaloneta y medias institucionales.',
-      price:        '$35.00',
-      availability: 'En stock',
-      images: [
-        { id: 1, url: '', alt: 'Vista frontal' },
-      ],
-    },
+  caracteristicas: [
+    { id: 1, titulo: 'Tela de Calidad',        descripcion: 'Material transpirable y duradero para máximo confort' },
+    { id: 2, titulo: 'Diseño Moderno',         descripcion: 'Estilos actuales que reflejan la identidad institucional' },
+    { id: 3, titulo: 'Variedad de Tallas',     descripcion: 'Disponible en todas las tallas desde XS hasta XXL' },
+    { id: 4, titulo: 'Bordado Institucional',  descripcion: 'Logo y distintivos bordados con precisión' },
+    { id: 5, titulo: 'Fácil de Limpiar',       descripcion: 'Resistente al lavado frecuente sin decolorarse' },
+    { id: 6, titulo: 'Garantía de Calidad',    descripcion: 'Respaldado por garantía de satisfacción institucional' },
   ],
 };
 
 @Injectable({ providedIn: 'root' })
 export class UniformesService {
-  get(): UniformesConfig {
-    const raw = localStorage.getItem(KEY);
-    return raw ? { ...DEFAULT, ...JSON.parse(raw) } : { ...DEFAULT };
+
+  private subject = new BehaviorSubject<UniformesConfig>(this.clone(DEFAULT));
+  config$ = this.subject.asObservable();
+
+  constructor(private configApi: ConfiguracionApiService) {
+    this.configApi.get<Partial<UniformesConfig>>('uniformes_page').pipe(
+      map(c => this.mergeConDefault(c)),
+      catchError(err => of(err?.status === 404 ? this.clone(DEFAULT) : this.cargarLocal()))
+    ).subscribe(c => this.subject.next(c));
   }
-  getCopia(): UniformesConfig { return JSON.parse(JSON.stringify(this.get())); }
-  guardar(c: UniformesConfig): void { localStorage.setItem(KEY, JSON.stringify(c)); }
-  nextId(): number { return Date.now(); }
+
+  /**
+   * Combina lo que venga del backend con DEFAULT — necesario porque un documento
+   * guardado antes de agregar un campo nuevo (ej. 'caracteristicas') no lo tendrá,
+   * y sin este merge llegaría como `undefined` y rompería cualquier `.length`/`.push`.
+   */
+  private mergeConDefault(c?: Partial<UniformesConfig> | null): UniformesConfig {
+    return {
+      ...this.clone(DEFAULT),
+      ...(c ?? {}),
+      caracteristicas: c?.caracteristicas ?? this.clone(DEFAULT.caracteristicas),
+    };
+  }
+
+  private cargarLocal(): UniformesConfig {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? this.mergeConDefault(JSON.parse(raw)) : this.clone(DEFAULT);
+    } catch { return this.clone(DEFAULT); }
+  }
+
+  get(): UniformesConfig { return this.subject.value; }
+  getCopia(): UniformesConfig { return this.clone(this.subject.value); }
+
+  guardar(c: UniformesConfig): Observable<void> {
+    return this.configApi.guardar('uniformes_page', c).pipe(
+      tap(() => this.subject.next(c))
+    );
+  }
+
+  cargarDesdeBackend(): Observable<UniformesConfig> {
+    return this.configApi.get<Partial<UniformesConfig>>('uniformes_page').pipe(
+      map(c => this.mergeConDefault(c)),
+      tap(c => this.subject.next(c)),
+      catchError(() => of(this.subject.value))
+    );
+  }
+
+  private clone<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value));
+  }
 }

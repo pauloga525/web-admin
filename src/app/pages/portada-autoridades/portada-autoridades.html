@@ -20,8 +20,7 @@
       <textarea [(ngModel)]="config.heroDescripcion" rows="2" class="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
     </div>
     <div>
-      <label class="block text-xs text-slate-500 mb-1">Imagen de fondo (URL)</label>
-      <input [(ngModel)]="config.heroImagenFondo" placeholder="https://..." class="w-full border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      <app-image-url-input label="Imagen de fondo" [(ngModel)]="config.heroImagenFondo" placeholder="https://..." previewHeight="h-40" />
     </div>
     <hr class="border-slate-200 dark:border-slate-700" />
     <h2 class="font-semibold text-slate-800 dark:text-white">Sección principal</h2>

@@ -2,11 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NoticiasPageService, NoticiasPageConfig } from '../../services/noticias-page.service';
+import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
 @Component({
   selector: 'app-portada-noticias',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
   templateUrl: './portada-noticias.html',
 })
 export class PortadaNoticias implements OnInit {

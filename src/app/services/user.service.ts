@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { AuthService } from './auth.service';
@@ -68,6 +68,14 @@ export class UserService {
   }
 
   getCopia(): UserProfile { return { ...this.subject.value }; }
+
+  /** Cambia la contraseña del usuario autenticado, verificando la actual en el backend. */
+  cambiarPassword(actual: string, nueva: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/users/me/password`, {
+      current_password: actual,
+      new_password: nueva,
+    });
+  }
 
   getIniciales(): string {
     const p = this.subject.value;
