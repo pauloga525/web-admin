@@ -6,7 +6,7 @@
  */
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { map, tap, catchError } from 'rxjs/operators';
 import { ConfiguracionApiService } from './configuracion-api.service';
 
 export interface KpiCard {
@@ -36,9 +36,13 @@ export class KpiService {
   kpis$ = this.subject.asObservable();
 
   constructor(private configApi: ConfiguracionApiService) {
+    // ConfiguracionApiService.get() convierte un 404 en {} (objeto vacío) en vez de
+    // lanzar error — válido para configs tipo objeto, pero 'kpis' es un array, así
+    // que hay que detectar ese caso explícitamente y no dejar pasar un {} suelto.
     this.configApi.get<KpiCard[]>('kpis').pipe(
-      catchError(err => of(err?.status === 404 ? DEFAULT.map(k => ({ ...k })) : this.cargarLocal()))
-    ).subscribe(list => this.subject.next(list ?? DEFAULT.map(k => ({ ...k }))));
+      map(list => Array.isArray(list) && list.length ? list : DEFAULT.map(k => ({ ...k }))),
+      catchError(() => of(this.cargarLocal()))
+    ).subscribe(list => this.subject.next(list));
   }
 
   private cargarLocal(): KpiCard[] {

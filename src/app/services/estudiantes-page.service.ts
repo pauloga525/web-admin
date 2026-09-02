@@ -33,6 +33,13 @@ export interface EstudiantesPageConfig {
   // Instalaciones
   instalacionesTitulo: string;
   instalaciones:       Instalacion[];
+  // Página "Nuestros Graduados" (/gallery)
+  graduadosHeroTitulo:          string;
+  graduadosHeroDescripcion:     string;
+  graduadosDestacadoBadge:      string;
+  graduadosDestacadoTitulo:     string;
+  graduadosDestacadoDescripcion: string;
+  graduadosDestacadoImagen:     string;
 }
 
 const DEFAULT: EstudiantesPageConfig = {
@@ -80,6 +87,13 @@ const DEFAULT: EstudiantesPageConfig = {
     { id: 2, title: 'Biblioteca y Recursos',  description: 'Amplio acervo bibliográfico físico y digital para la investigación.',         image: '' },
     { id: 3, title: 'Áreas Deportivas',       description: 'Canchas, pista atlética y espacios para el desarrollo físico integral.',      image: '' },
   ],
+
+  graduadosHeroTitulo:      'Nuestros Graduados',
+  graduadosHeroDescripcion: 'Explora la historia visual de nuestra institución a través de momentos capturados en eventos, vida estudiantil y logros académicos.',
+  graduadosDestacadoBadge:      'Destacado',
+  graduadosDestacadoTitulo:     'Homenaje a Graduados',
+  graduadosDestacadoDescripcion: 'Celebrando el esfuerzo, la dedicación y el éxito de nuestros graduados. Un nuevo capítulo comienza para nuestros líderes del mañana.',
+  graduadosDestacadoImagen: '',
 };
 
 @Injectable({ providedIn: 'root' })
@@ -120,6 +134,15 @@ export class EstudiantesPageService {
   nextId(): number { return Date.now(); }
 
   private mergeConfig(config?: Partial<EstudiantesPageConfig>): EstudiantesPageConfig {
+    // Desenvolver anidamiento legado { datos: { ...configReal } } — un documento
+    // viejo (probablemente importado del sistema anterior) quedó guardado así;
+    // sin este desenvolvido, todos los campos reales quedan invisibles para
+    // mergeConfig (caen a DEFAULT) y cada guardado vuelve a arrastrar el bloque
+    // corrupto completo.
+    if (config && typeof config === 'object' && 'datos' in (config as any) && !('heroTitulo' in (config as any))) {
+      config = (config as any).datos as Partial<EstudiantesPageConfig>;
+    }
+
     const base = {
       ...this.clone(DEFAULT),
       ...(config ?? {}),
