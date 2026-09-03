@@ -38,6 +38,10 @@ export class Autoridades implements OnInit {
       name: '', title: '', categoryLabel: 'Rectorado', image: '',
       email: '', specialization: '', linkedin: '', fullBio: '',
       ubicacion: 'Campus Principal UETS', horario: 'Lunes a Viernes 8:00 - 17:00', telefono: '',
+      // Sin esto la autoridad se guarda pero no aparece en la página pública,
+      // que solo muestra las que tienen publicada = true.
+      orden: this.lista.length + 1,
+      publicada: true,
     };
     this.esNueva = true;
     this.guardado = false;

@@ -218,6 +218,8 @@ export interface Autoridad extends MongoDocument {
   ubicacion: string;
   horario: string;
   telefono: string;
+  orden: number;
+  publicada: boolean;
 }
 
 export type CreateAutoridadDto = Omit<Autoridad, '_id' | 'createdAt' | 'updatedAt'>;

@@ -142,14 +142,23 @@
         <div class="space-y-3">
           @for (ev of config.timeline; track trackById($index, ev)) {
           <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
-            <div class="flex items-center gap-2">
-              <input [(ngModel)]="ev.year" (ngModelChange)="onChange()" placeholder="Año" class="w-20 input-field text-sm font-bold text-primary" />
-              <input [(ngModel)]="ev.title" (ngModelChange)="onChange()" placeholder="Título del evento" class="flex-1 input-field font-semibold" />
-              <button type="button" (click)="eliminarEvento(ev.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
+            <div class="flex items-start gap-2">
+              <div class="w-20 shrink-0">
+                <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Año</label>
+                <input [(ngModel)]="ev.year" (ngModelChange)="onChange()" placeholder="Año" class="w-full input-field text-sm font-bold text-primary" />
+              </div>
+              <div class="flex-1">
+                <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Título del evento</label>
+                <input [(ngModel)]="ev.title" (ngModelChange)="onChange()" placeholder="Título del evento" class="w-full input-field font-semibold" />
+              </div>
+              <button type="button" (click)="eliminarEvento(ev.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0 mt-5">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
               </button>
             </div>
-            <textarea [(ngModel)]="ev.description" (ngModelChange)="onChange()" rows="2" placeholder="Descripción..." class="w-full input-field resize-none text-sm"></textarea>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Descripción</label>
+              <textarea [(ngModel)]="ev.description" (ngModelChange)="onChange()" rows="2" placeholder="Descripción..." class="w-full input-field resize-none text-sm"></textarea>
+            </div>
             <app-image-url-input [(ngModel)]="ev.image" (ngModelChange)="onChange()" placeholder="URL imagen (opcional)" [showPreview]="false" />
           </div>
           }
