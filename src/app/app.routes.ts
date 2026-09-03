@@ -79,10 +79,4 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/portada-noticias/portada-noticias').then(m => m.PortadaNoticias),
     data: { breadcrumb: 'Portada Noticias' }
   },
-  {
-    path: 'portada-autoridades',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/portada-autoridades/portada-autoridades').then(m => m.PortadaAutoridades),
-    data: { breadcrumb: 'Portada Autoridades' }
-  },
 ];
