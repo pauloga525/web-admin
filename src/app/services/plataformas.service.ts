@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { map, tap, catchError } from 'rxjs/operators';
 import { ConfiguracionApiService } from './configuracion-api.service';
 
 export interface Plataforma {
@@ -41,6 +41,10 @@ export class PlataformasService {
 
   cargarDesdeBackend(): Observable<Plataforma[]> {
     return this.configApi.get<Plataforma[]>('plataformas').pipe(
+      // ConfiguracionApiService.get() convierte un 404 en {} (objeto vacío)
+      // en vez de lanzar error — esta config es un array, así que hay que
+      // detectar ese caso explícitamente en vez de dejar pasar un {} suelto.
+      map(list => Array.isArray(list) && list.length ? list : DEFAULT.map(p => ({ ...p }))),
       tap(list => localStorage.setItem(KEY, JSON.stringify(list))),
       catchError(() => of(this.get()))
     );

@@ -5,7 +5,7 @@
  */
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { map, tap, catchError } from 'rxjs/operators';
 import { ConfiguracionApiService } from './configuracion-api.service';
 
 export interface AdmisionStep     { id: number; stepNumber: number; icon: string; title: string; description: string; }
@@ -90,24 +90,43 @@ const DEFAULT: AdmisionesConfig = {
 @Injectable({ providedIn: 'root' })
 export class AdmisionesService {
 
-  private subject = new BehaviorSubject<AdmisionesConfig>({ ...DEFAULT });
+  private subject = new BehaviorSubject<AdmisionesConfig>(this.clone(DEFAULT));
   config$ = this.subject.asObservable();
 
   constructor(private configApi: ConfiguracionApiService) {
-    this.configApi.get<AdmisionesConfig>('admisiones').pipe(
-      catchError(err => of(err?.status === 404 ? { ...DEFAULT } : this.cargarLocal()))
-    ).subscribe(c => this.subject.next(c ?? DEFAULT));
+    this.configApi.get<Partial<AdmisionesConfig>>('admisiones').pipe(
+      map(c => this.mergeConDefault(c)),
+      catchError(err => of(err?.status === 404 ? this.clone(DEFAULT) : this.cargarLocal()))
+    ).subscribe(c => this.subject.next(c));
+  }
+
+  /**
+   * Combina lo que venga del backend con DEFAULT — necesario porque
+   * ConfiguracionApiService.get() convierte un 404 en {} en vez de lanzar
+   * error, y un documento con un esquema antiguo/incompleto no tendrá estos
+   * campos. Sin este merge, los arrays (steps, requisitos, descargas,
+   * fechas) llegan como undefined y rompen el editor.
+   */
+  private mergeConDefault(c?: Partial<AdmisionesConfig> | null): AdmisionesConfig {
+    return {
+      ...this.clone(DEFAULT),
+      ...(c ?? {}),
+      steps: c?.steps ?? this.clone(DEFAULT.steps),
+      requisitos: c?.requisitos ?? this.clone(DEFAULT.requisitos),
+      descargas: c?.descargas ?? this.clone(DEFAULT.descargas),
+      fechas: c?.fechas ?? this.clone(DEFAULT.fechas),
+    };
   }
 
   private cargarLocal(): AdmisionesConfig {
     try {
       const raw = localStorage.getItem(KEY);
-      return raw ? { ...DEFAULT, ...JSON.parse(raw) } : { ...DEFAULT };
-    } catch { return { ...DEFAULT }; }
+      return raw ? this.mergeConDefault(JSON.parse(raw)) : this.clone(DEFAULT);
+    } catch { return this.clone(DEFAULT); }
   }
 
   get(): AdmisionesConfig { return this.subject.value; }
-  getCopia(): AdmisionesConfig { return JSON.parse(JSON.stringify(this.subject.value)); }
+  getCopia(): AdmisionesConfig { return this.clone(this.subject.value); }
 
   guardar(c: AdmisionesConfig): Observable<void> {
     return this.configApi.guardar('admisiones', c).pipe(
@@ -116,13 +135,18 @@ export class AdmisionesService {
   }
 
   cargarDesdeBackend(): Observable<AdmisionesConfig> {
-    return this.configApi.get<AdmisionesConfig>('admisiones').pipe(
+    return this.configApi.get<Partial<AdmisionesConfig>>('admisiones').pipe(
+      map(c => this.mergeConDefault(c)),
       tap(c => this.subject.next(c)),
       catchError(() => of(this.subject.value))
     );
   }
 
   nextId(): number { return Date.now(); }
+
+  private clone<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value));
+  }
 }
 
 

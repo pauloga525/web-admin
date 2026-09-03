@@ -5,7 +5,7 @@
  */
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { map, tap, catchError } from 'rxjs/operators';
 import { ConfiguracionApiService } from './configuracion-api.service';
 
 export interface ContactoAsunto {
@@ -81,24 +81,43 @@ const DEFAULT: ContactoConfig = {
 @Injectable({ providedIn: 'root' })
 export class ContactoService {
 
-  private subject = new BehaviorSubject<ContactoConfig>({ ...DEFAULT });
+  private subject = new BehaviorSubject<ContactoConfig>(this.clone(DEFAULT));
   config$ = this.subject.asObservable();
 
   constructor(private configApi: ConfiguracionApiService) {
-    this.configApi.get<ContactoConfig>('contacto').pipe(
-      catchError(err => of(err?.status === 404 ? { ...DEFAULT } : this.cargarLocal()))
-    ).subscribe(c => this.subject.next(c ?? DEFAULT));
+    this.configApi.get<Partial<ContactoConfig>>('contacto').pipe(
+      map(c => this.mergeConDefault(c)),
+      catchError(err => of(err?.status === 404 ? this.clone(DEFAULT) : this.cargarLocal()))
+    ).subscribe(c => this.subject.next(c));
+  }
+
+  /**
+   * Combina lo que venga del backend con DEFAULT — necesario porque
+   * ConfiguracionApiService.get() convierte un 404 en {} (objeto vacío) en
+   * vez de lanzar error, y un documento guardado antes de agregar un campo
+   * nuevo tampoco lo tendrá. Sin este merge, los arrays (infoCards, redes,
+   * asuntos) llegan como undefined y rompen el editor (.push is not a
+   * function) o se pierden por completo al volver a guardar.
+   */
+  private mergeConDefault(c?: Partial<ContactoConfig> | null): ContactoConfig {
+    return {
+      ...this.clone(DEFAULT),
+      ...(c ?? {}),
+      infoCards: c?.infoCards ?? this.clone(DEFAULT.infoCards),
+      redes: c?.redes ?? this.clone(DEFAULT.redes),
+      asuntos: c?.asuntos ?? this.clone(DEFAULT.asuntos),
+    };
   }
 
   private cargarLocal(): ContactoConfig {
     try {
       const raw = localStorage.getItem(KEY);
-      return raw ? { ...DEFAULT, ...JSON.parse(raw) } : { ...DEFAULT };
-    } catch { return { ...DEFAULT }; }
+      return raw ? this.mergeConDefault(JSON.parse(raw)) : this.clone(DEFAULT);
+    } catch { return this.clone(DEFAULT); }
   }
 
   get(): ContactoConfig { return this.subject.value; }
-  getCopia(): ContactoConfig { return JSON.parse(JSON.stringify(this.subject.value)); }
+  getCopia(): ContactoConfig { return this.clone(this.subject.value); }
 
   guardar(c: ContactoConfig): Observable<void> {
     return this.configApi.guardar('contacto', c).pipe(
@@ -107,11 +126,16 @@ export class ContactoService {
   }
 
   cargarDesdeBackend(): Observable<ContactoConfig> {
-    return this.configApi.get<ContactoConfig>('contacto').pipe(
+    return this.configApi.get<Partial<ContactoConfig>>('contacto').pipe(
+      map(c => this.mergeConDefault(c)),
       tap(c => this.subject.next(c)),
       catchError(() => of(this.subject.value))
     );
   }
 
   nextId(): number { return Date.now(); }
+
+  private clone<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value));
+  }
 }

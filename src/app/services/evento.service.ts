@@ -161,14 +161,18 @@ export class EventoService {
   }
 
   private _guardarCategorias(lista: CategoriaEvento[]): void {
-    this.http.put(`${this.configUrl}/eventos_categorias`, { datos: { categorias: lista } })
+    // El PUT de /configuracion/{clave} guarda el cuerpo TAL CUAL como "datos"
+    // del documento — envolverlo otra vez en { datos: ... } lo duplica
+    // (datos.datos.categorias) y la siguiente carga nunca lo vuelve a
+    // encontrar, revirtiendo siempre a las categorías por defecto.
+    this.http.put(`${this.configUrl}/eventos_categorias`, { categorias: lista })
       .subscribe(() => this.categoriasSubject.next(lista));
   }
 
   // ─── Hero ─────────────────────────────────────────────────────────────────
 
   actualizarHero(hero: HeroEventos): void {
-    this.http.put(`${this.configUrl}/eventos_hero`, { datos: hero })
+    this.http.put(`${this.configUrl}/eventos_hero`, hero)
       .subscribe(() => this.heroSubject.next(hero));
   }
 
