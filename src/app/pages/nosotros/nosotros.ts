@@ -20,6 +20,7 @@ export class Nosotros implements OnInit {
   config!: NosotrosConfig;
   tabActiva: Tab = 'hero';
   guardado = false;
+  expandidoEvento: number | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
 
   autoridades: Autoridad[] = [];
@@ -80,11 +81,18 @@ export class Nosotros implements OnInit {
   }
 
   // ── Timeline ───────────────────────────────────────────────────────────────
+  toggleEvento(index: number): void {
+    this.expandidoEvento = this.expandidoEvento === index ? null : index;
+  }
+
   agregarEvento(): void {
     this.config.timeline.push({ id: this.svc.nextId(), year: '', title: '', description: '', image: '' });
     this.onChange();
+    this.expandidoEvento = this.config.timeline.length - 1;
   }
   eliminarEvento(id: number): void {
+    const index = this.config.timeline.findIndex(e => e.id === id);
+    if (this.expandidoEvento === index) this.expandidoEvento = null;
     this.config.timeline = this.config.timeline.filter(e => e.id !== id);
     this.onChange();
   }
