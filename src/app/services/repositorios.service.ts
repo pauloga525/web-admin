@@ -1,4 +1,18 @@
-﻿import { Injectable } from '@angular/core';
+/**
+ * @file repositorios.service.ts
+ * @description Gestiona el contenido de la página pública "Repositorio Digital".
+ * Persiste en el backend (clave: 'repositorios') con fallback a localStorage.
+ *
+ * Antes este servicio SOLO guardaba en localStorage del navegador del admin
+ * que editaba — nunca llegaba al backend, así que ningún cambio (en
+ * ninguna de sus pestañas) podía reflejarse jamás en la página pública,
+ * que vive en un servidor/app completamente distinta y no tiene forma de
+ * leer el localStorage de otro navegador.
+ */
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { map, tap, catchError } from 'rxjs/operators';
+import { ConfiguracionApiService } from './configuracion-api.service';
 
 export interface RepoStat        { id: number; numero: string; etiqueta: string; }
 export interface RepoColeccion   { id: number; icon: string; title: string; description: string; count: string; }
@@ -75,13 +89,53 @@ const DEFAULT: RepositoriosConfig = {
 
 @Injectable({ providedIn: 'root' })
 export class RepositoriosService {
-  get(): RepositoriosConfig {
-    const raw = localStorage.getItem(KEY);
-    return raw ? { ...DEFAULT, ...JSON.parse(raw) } : { ...DEFAULT };
+
+  private subject = new BehaviorSubject<RepositoriosConfig>(this.clone(DEFAULT));
+  config$ = this.subject.asObservable();
+
+  constructor(private configApi: ConfiguracionApiService) {
+    this.configApi.get<Partial<RepositoriosConfig>>('repositorios').pipe(
+      map(c => this.mergeConDefault(c)),
+      catchError(err => of(err?.status === 404 ? this.clone(DEFAULT) : this.cargarLocal()))
+    ).subscribe(c => this.subject.next(c));
   }
-  getCopia(): RepositoriosConfig { return JSON.parse(JSON.stringify(this.get())); }
-  guardar(c: RepositoriosConfig): void { localStorage.setItem(KEY, JSON.stringify(c)); }
+
+  /**
+   * Combina lo que venga del backend con DEFAULT — necesario porque
+   * ConfiguracionApiService.get() convierte un 404 en {} en vez de lanzar
+   * error. Sin este merge, los arrays (heroStats, colecciones,
+   * publicaciones, navLinks) llegan como undefined y rompen el editor.
+   */
+  private mergeConDefault(c?: Partial<RepositoriosConfig> | null): RepositoriosConfig {
+    return {
+      ...this.clone(DEFAULT),
+      ...(c ?? {}),
+      heroStats:     c?.heroStats     ?? this.clone(DEFAULT.heroStats),
+      colecciones:   c?.colecciones   ?? this.clone(DEFAULT.colecciones),
+      publicaciones: c?.publicaciones ?? this.clone(DEFAULT.publicaciones),
+      navLinks:      c?.navLinks      ?? this.clone(DEFAULT.navLinks),
+    };
+  }
+
+  private cargarLocal(): RepositoriosConfig {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? this.mergeConDefault(JSON.parse(raw)) : this.clone(DEFAULT);
+    } catch { return this.clone(DEFAULT); }
+  }
+
+  get(): RepositoriosConfig { return this.subject.value; }
+  getCopia(): RepositoriosConfig { return this.clone(this.subject.value); }
+
+  guardar(c: RepositoriosConfig): Observable<void> {
+    return this.configApi.guardar('repositorios', c).pipe(
+      tap(() => this.subject.next(c))
+    );
+  }
+
   nextId(): number { return Date.now(); }
+
+  private clone<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value));
+  }
 }
-
-

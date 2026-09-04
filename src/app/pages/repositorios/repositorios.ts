@@ -1,16 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { RepositoriosService, RepositoriosConfig, RepoColeccion, RepoPublicacion, RepoNavLink, RepoStat } from '../../services/repositorios.service';
-import { PlataformasService, Plataforma } from '../../services/plataformas.service';
-import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
 type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
 
 @Component({
   selector: 'app-repositorios',
   standalone: true,
-  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
+  imports: [CommonModule, FormsModule, RouterModule],
   template: `
 <div class="p-8 max-w-5xl mx-auto w-full space-y-6">
   <div class="flex items-center justify-between">
@@ -153,29 +152,14 @@ type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
 
       @if (tabActiva === 'enlaces') {
       <div class="space-y-4 animate-[fadeIn_.2s_ease_forwards]">
-        <div class="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
-          <svg class="w-4 h-4 text-blue-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <p class="text-xs text-blue-700 dark:text-blue-300">Los enlaces de interés son compartidos con Campus y la página principal. Los cambios aquí se reflejan en todo el sitio.</p>
-        </div>
         <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título de sección</label><input [(ngModel)]="config.enlacesTitulo" (ngModelChange)="onChange()" class="input-field" /></div>
         <hr class="border-slate-100 dark:border-slate-800" />
-        <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Plataformas / Logos</h3>
-          <button type="button" (click)="agregarPlataforma()" class="text-xs text-primary hover:underline flex items-center gap-1"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Agregar</button>
-        </div>
-        <div class="space-y-3">
-          @for (p of plataformas; track trackById($index, p)) {
-          <div class="flex items-center gap-3 border border-slate-200 dark:border-slate-700 rounded-xl p-3">
-            <div class="w-12 h-10 rounded-lg shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-              @if (p.image) { <img [src]="p.image" [alt]="p.name" class="w-full h-full object-contain p-1" /> }
-              @else { <svg class="w-5 h-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> }
-            </div>
-            <input [(ngModel)]="p.name" (ngModelChange)="onChange()" placeholder="Nombre" class="w-28 input-field text-sm" />
-            <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="p.image" (ngModelChange)="onChange()" placeholder="URL logo" [showPreview]="false" />
-            <input [(ngModel)]="p.url" (ngModelChange)="onChange()" placeholder="URL enlace" class="flex-1 input-field text-xs" />
-            <button type="button" (click)="eliminarPlataforma(p.id)" class="text-slate-300 hover:text-red-500 transition shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg></button>
+        <div class="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
+          <svg class="w-4 h-4 text-blue-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div class="text-xs text-blue-700 dark:text-blue-300 space-y-1.5">
+            <p>Los logos de esta sección son los mismos que se muestran en Campus y en la página principal — se editan en un solo lugar para evitar que queden desincronizados.</p>
+            <a routerLink="/campus" class="font-semibold underline hover:no-underline inline-block">Ir a Campus → Plataformas</a>
           </div>
-          }
         </div>
       </div>
       }
@@ -187,7 +171,6 @@ type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
 })export class Repositorios implements OnInit {
 
   config!: RepositoriosConfig;
-  plataformas!: Plataforma[];
   tabActiva: Tab = 'hero';
   guardado = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -200,24 +183,24 @@ type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
     { id: 'enlaces',      label: 'Enlaces'      },
   ];
 
-  constructor(
-    private svc: RepositoriosService,
-    private plataformasSvc: PlataformasService,
-  ) {}
+  constructor(private svc: RepositoriosService) {}
 
   ngOnInit(): void {
     this.config = this.svc.getCopia();
-    this.plataformas = this.plataformasSvc.getCopia();
+    this.svc.config$.subscribe(config => { this.config = JSON.parse(JSON.stringify(config)); });
   }
 
   onChange(): void { this.guardado = false; }
 
   guardar(): void {
-    this.svc.guardar(this.config);
-    this.plataformasSvc.guardar(this.plataformas);
-    this.guardado = true;
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.guardado = false, 3000);
+    this.svc.guardar(this.config).subscribe({
+      next: () => {
+        this.guardado = true;
+        if (this.timer) clearTimeout(this.timer);
+        this.timer = setTimeout(() => this.guardado = false, 3000);
+      },
+      error: err => console.error('[Repositorios] Error al guardar:', err),
+    });
   }
 
   trackById(_i: number, item: { id: number }): number { return item.id; }
@@ -237,8 +220,4 @@ type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
   // Nav links
   agregarNavLink(): void { this.config.navLinks.push({ id: this.svc.nextId(), icon: 'link', label: '', href: '#' }); this.onChange(); }
   eliminarNavLink(id: number): void { this.config.navLinks = this.config.navLinks.filter(l => l.id !== id); this.onChange(); }
-
-  // Plataformas (enlaces de interés)
-  agregarPlataforma(): void { this.plataformas.push({ id: this.plataformasSvc.nextId(), name: '', image: '', url: '#' }); this.onChange(); }
-  eliminarPlataforma(id: number): void { this.plataformas = this.plataformas.filter(p => p.id !== id); this.onChange(); }
 }
