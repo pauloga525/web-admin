@@ -187,7 +187,7 @@ type Tab = 'hero' | 'yanuncay' | 'crespi' | 'auxiliadora' | 'plataformas';
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
           <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título de sección (se usa en las 5 páginas)</label>
             <input [(ngModel)]="config.plataformasTitulo" (ngModelChange)="onChange()" class="input-field" /></div>
-          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descripción (solo se usa aquí, en Campus)</label>
+          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descripción (se usa en las 5 páginas)</label>
             <input [(ngModel)]="config.plataformasDescripcion" (ngModelChange)="onChange()" class="input-field" /></div>
         </div>
         <hr class="border-slate-100 dark:border-slate-800" />
