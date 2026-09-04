@@ -152,12 +152,10 @@ type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
 
       @if (tabActiva === 'enlaces') {
       <div class="space-y-4 animate-[fadeIn_.2s_ease_forwards]">
-        <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título de sección</label><input [(ngModel)]="config.enlacesTitulo" (ngModelChange)="onChange()" class="input-field" /></div>
-        <hr class="border-slate-100 dark:border-slate-800" />
         <div class="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
           <svg class="w-4 h-4 text-blue-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <div class="text-xs text-blue-700 dark:text-blue-300 space-y-1.5">
-            <p>Los logos de esta sección son los mismos que se muestran en Campus y en la página principal — se editan en un solo lugar para evitar que queden desincronizados.</p>
+            <p>Esta sección (título y logos) es la misma en Campus, Repositorio, Inicio, Biblioteca e Instructivos — se edita en un solo lugar para que el título y los logos nunca queden desincronizados entre páginas.</p>
             <a routerLink="/campus" class="font-semibold underline hover:no-underline inline-block">Ir a Campus → Plataformas</a>
           </div>
         </div>

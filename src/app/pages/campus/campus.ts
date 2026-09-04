@@ -182,12 +182,12 @@ type Tab = 'hero' | 'yanuncay' | 'crespi' | 'auxiliadora' | 'plataformas';
       <div class="space-y-4 animate-[fadeIn_.2s_ease_forwards]">
         <div class="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3 mb-2">
           <svg class="w-4 h-4 text-blue-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <p class="text-xs text-blue-700 dark:text-blue-300">Estas plataformas se muestran aquí y en la sección "Enlaces de Interés" del Repositorio Digital — es la misma lista en ambos lugares. (Los "Enlaces de Interés" de la página de inicio son independientes y se editan desde el Dashboard.)</p>
+          <p class="text-xs text-blue-700 dark:text-blue-300">Este título y estos logos son los mismos en <strong>5 páginas</strong>: Campus, Repositorio Digital, Inicio, Biblioteca e Instructivos. Este es el único lugar donde se editan.</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título de sección</label>
+          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título de sección (se usa en las 5 páginas)</label>
             <input [(ngModel)]="config.plataformasTitulo" (ngModelChange)="onChange()" class="input-field" /></div>
-          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descripción</label>
+          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descripción (solo se usa aquí, en Campus)</label>
             <input [(ngModel)]="config.plataformasDescripcion" (ngModelChange)="onChange()" class="input-field" /></div>
         </div>
         <hr class="border-slate-100 dark:border-slate-800" />
