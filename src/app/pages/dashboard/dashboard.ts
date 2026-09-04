@@ -55,7 +55,7 @@ export class Dashboard implements OnInit, OnDestroy {
     { id: 'contenido',     label: 'Contenido'         },  // porQue + niveles
     { id: 'eventosLogos',  label: 'Eventos & Logos'   },  // eventos home + logos
     { id: 'institucional', label: 'Institucional'     },  // institucional + comunicacion
-    { id: 'admisiones',    label: 'Admisiones'        },  // admisiones + enlacesInteres
+    { id: 'admisiones',    label: 'Admisiones'        },  // admisiones + enlaces de interés (redirige a Campus)
     { id: 'footer',        label: 'Footer'            },
   ];
 
@@ -310,16 +310,6 @@ export class Dashboard implements OnInit, OnDestroy {
   }
   eliminarEnlaceAdmision(id: number): void {
     this.home.admisiones.enlaces = this.home.admisiones.enlaces.filter(e => e.id !== id);
-    this.onCambioHome();
-  }
-
-  // ── Enlaces de interés ─────────────────────────────────────────────────────
-  agregarEnlaceInteres(): void {
-    this.home.enlacesInteres.push({ id: this.homeService.nextId(), nombre: '', url: '', imagen: '' });
-    this.onCambioHome();
-  }
-  eliminarEnlaceInteres(id: number): void {
-    this.home.enlacesInteres = this.home.enlacesInteres.filter(e => e.id !== id);
     this.onCambioHome();
   }
 
