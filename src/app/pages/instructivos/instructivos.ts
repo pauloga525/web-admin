@@ -5,6 +5,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { InstructivosService, InstructivosConfig } from '../../services/instructivos.service';
 import { RecursosApiService, RecursoApi } from '../../services/recursos-api.service';
+import { DocumentUrlInputComponent } from '../../components/document-url-input/document-url-input.component';
 
 type Tab = 'hero' | 'categorias' | 'instructivos';
 
@@ -22,7 +23,7 @@ const TIPOS = ['pdf', 'video'];
 @Component({
   selector: 'app-instructivos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DocumentUrlInputComponent],
   template: `
 <div class="p-8 max-w-5xl mx-auto w-full space-y-6">
 
@@ -95,39 +96,67 @@ const TIPOS = ['pdf', 'video'];
           </button>
         </div>
         @if (errorInstructivo) { <p class="text-xs text-red-500">{{errorInstructivo}}</p> }
-        <div class="space-y-4">
+        <div class="space-y-3">
           @for (inst of instructivos; track $index) {
-          <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
-            <!-- Fila 1: tipo + título + eliminar -->
-            <div class="flex items-center gap-2">
-              <select [(ngModel)]="inst.type"
-                class="text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 shrink-0">
-                <option value="pdf">PDF</option>
-                <option value="video">Video</option>
-              </select>
-              <input [(ngModel)]="inst.title" placeholder="Título" class="flex-1 input-field font-semibold" />
+          <div class="border rounded-xl overflow-hidden" [class]="!inst.title.trim() ? 'border-amber-300 dark:border-amber-700' : 'border-slate-200 dark:border-slate-700'">
+
+            <!-- Encabezado — siempre visible, para diferenciar cada documento sin tener que abrirlo -->
+            <div class="flex items-center gap-2 px-4 py-3 bg-slate-50 dark:bg-slate-800/50">
+              <button type="button" (click)="toggleInstructivo($index)" class="shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition">
+                <svg class="w-4 h-4 transition-transform duration-200" [class.rotate-180]="expandidoInstructivo === $index"
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              <span class="shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded-full"
+                [class]="inst.type === 'pdf' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'">
+                {{ inst.type === 'pdf' ? 'PDF' : 'Video' }}
+              </span>
+              <input [(ngModel)]="inst.title" placeholder="Título del documento"
+                class="flex-1 min-w-0 bg-transparent border-0 border-b-2 text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-0 px-1 py-0.5"
+                [class]="!inst.title.trim() ? 'border-amber-400 placeholder:text-amber-500' : 'border-transparent focus:border-primary'" />
+              @if (!inst._id) { <span class="text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">Nuevo</span> }
               <button type="button" (click)="eliminarInstructivo($index)" class="text-slate-300 hover:text-red-500 transition shrink-0">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
               </button>
             </div>
-            <!-- Fila 2: descripción -->
-            <textarea [(ngModel)]="inst.description" rows="2" placeholder="Descripción breve" class="w-full input-field resize-none text-sm"></textarea>
-            <!-- Fila 3: categoría -->
-            <select [(ngModel)]="inst.categoria"
-              class="text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30">
-              @for (cat of config.categorias; track cat.id) { <option [value]="cat.name">{{cat.name}}</option> }
-            </select>
-            <!-- Fila 4: URL -->
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              <input [(ngModel)]="inst.url" placeholder="URL del recurso (PDF o video)" class="flex-1 input-field text-sm" />
+            @if (!inst.title.trim()) {
+              <p class="text-[11px] text-amber-600 dark:text-amber-400 px-4 -mt-1 pb-2 bg-slate-50 dark:bg-slate-800/50">Sin título — no se guardará hasta que le pongas uno.</p>
+            }
+
+            <!-- Contenido expandible -->
+            @if (expandidoInstructivo === $index) {
+            <div class="p-4 space-y-3 border-t border-slate-100 dark:border-slate-800 animate-[fadeIn_.15s_ease_forwards]">
+              <div class="flex items-center gap-2">
+                <select [(ngModel)]="inst.type"
+                  class="text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 shrink-0">
+                  <option value="pdf">PDF / Word</option>
+                  <option value="video">Video</option>
+                </select>
+                <select [(ngModel)]="inst.categoria"
+                  class="flex-1 text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  @for (cat of config.categorias; track cat.id) { <option [value]="cat.name">{{cat.name}}</option> }
+                </select>
+              </div>
+              <textarea [(ngModel)]="inst.description" rows="2" placeholder="Descripción breve" class="w-full input-field resize-none text-sm"></textarea>
+
+              @if (inst.type === 'pdf') {
+                <app-document-url-input [(ngModel)]="inst.url" placeholder="URL del PDF/Word o sube un archivo" />
+              } @else {
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  <input [(ngModel)]="inst.url" placeholder="URL del video (YouTube, Vimeo...)" class="flex-1 input-field text-sm" />
+                </div>
+              }
+
+              <div class="flex items-center justify-end gap-3">
+                <span class="text-[11px] text-slate-400">o usa "Guardar cambios" arriba para guardar todo junto</span>
+                <button type="button" (click)="guardarInstructivo($index)" class="text-xs font-semibold text-primary hover:underline shrink-0">
+                  {{ inst._id ? 'Guardar solo este' : 'Crear solo este' }}
+                </button>
+              </div>
             </div>
-            <div class="flex items-center justify-end gap-3">
-              <span class="text-[11px] text-slate-400">o usa "Guardar cambios" arriba para guardar todo junto</span>
-              <button type="button" (click)="guardarInstructivo($index)" class="text-xs font-semibold text-primary hover:underline shrink-0">
-                {{ inst._id ? 'Guardar solo este' : 'Crear solo este' }}
-              </button>
-            </div>
+            }
           </div>
           }
           @if (!instructivos.length) {
@@ -146,6 +175,7 @@ export class Instructivos implements OnInit {
 
   config!: InstructivosConfig;
   instructivos: InstructivoForm[] = [];
+  expandidoInstructivo: number | null = null;
   tabActiva: Tab = 'hero';
   guardado = false;
   guardando = false;
@@ -248,12 +278,17 @@ export class Instructivos implements OnInit {
     this.onChangeConfig();
   }
 
+  toggleInstructivo(index: number): void {
+    this.expandidoInstructivo = this.expandidoInstructivo === index ? null : index;
+  }
+
   agregarInstructivo(): void {
     this.instructivos.push({
       title: '', description: '', type: 'pdf',
       categoria: this.config.categorias[0]?.name ?? '',
       url: '',
     });
+    this.expandidoInstructivo = this.instructivos.length - 1;
   }
 
   guardarInstructivo(index: number): void {
@@ -270,6 +305,7 @@ export class Instructivos implements OnInit {
 
   eliminarInstructivo(index: number): void {
     const i = this.instructivos[index];
+    if (this.expandidoInstructivo === index) this.expandidoInstructivo = null;
     if (!i._id) { this.instructivos.splice(index, 1); return; }
     this.recursos.delete(i._id).subscribe({
       next: () => this.cargarInstructivos(),
