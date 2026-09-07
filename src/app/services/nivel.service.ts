@@ -37,7 +37,7 @@ const DEFAULTS: Record<string, NivelConfig> = {
     environmentTitle: 'Un ambiente diseñado para crecer',
     environmentDescription: 'Nuestras aulas están equipadas con rincones de aprendizaje, materiales Montessori y espacios verdes para el juego libre.',
     environmentImagen: '',
-    ctaDescripcion: 'Agenda una visita al campus o solicita más información sobre nuestro proceso de admisión.',
+    ctaDescripcion: 'Agenda una visita al campus o contáctanos para resolver todas tus dudas sobre este nivel.',
   },
 
   'basica-elemental': {
@@ -72,7 +72,7 @@ const DEFAULTS: Record<string, NivelConfig> = {
     environmentTitle: 'Espacios que inspiran el aprendizaje',
     environmentDescription: 'Aulas luminosas, biblioteca infantil y laboratorio de computación adaptado para los más pequeños.',
     environmentImagen: '',
-    ctaDescripcion: 'Agenda una visita al campus o solicita más información sobre nuestro proceso de admisión.',
+    ctaDescripcion: 'Agenda una visita al campus o contáctanos para resolver todas tus dudas sobre este nivel.',
   },
 
   'basica-media': {
@@ -108,7 +108,7 @@ const DEFAULTS: Record<string, NivelConfig> = {
     environmentTitle: 'Tecnología al servicio del aprendizaje',
     environmentDescription: 'Laboratorios de ciencias, aulas digitales interactivas y espacios de trabajo colaborativo.',
     environmentImagen: '',
-    ctaDescripcion: 'Agenda una visita al campus o solicita más información sobre nuestro proceso de admisión.',
+    ctaDescripcion: 'Agenda una visita al campus o contáctanos para resolver todas tus dudas sobre este nivel.',
   },
 
   'basica-superior': {
@@ -145,7 +145,7 @@ const DEFAULTS: Record<string, NivelConfig> = {
     environmentTitle: 'Preparados para el siguiente nivel',
     environmentDescription: 'Biblioteca especializada, laboratorios equipados y orientación vocacional para la transición al bachillerato.',
     environmentImagen: '',
-    ctaDescripcion: 'Agenda una visita al campus o solicita más información sobre nuestro proceso de admisión.',
+    ctaDescripcion: 'Agenda una visita al campus o contáctanos para resolver todas tus dudas sobre este nivel.',
   },
 };
 
