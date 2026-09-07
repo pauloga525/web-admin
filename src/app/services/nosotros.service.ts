@@ -33,6 +33,7 @@ export interface TimelineEvent {
 export interface NosotrosConfig {
   heroTitulo:      string;
   heroDescripcion: string;
+  heroImagenFondo: string;
   misionVision:    MisionVisionItem[];
   valoresTitulo:    string;
   valoresSubtitulo: string;
@@ -54,6 +55,7 @@ const KEY = 'edu_nosotros';
 const DEFAULT: NosotrosConfig = {
   heroTitulo:      'Nuestra Institución',
   heroDescripcion: 'Formando líderes éticos y profesionales de excelencia para transformar el futuro del Ecuador y el mundo desde hace más de tres décadas.',
+  heroImagenFondo: '',
   misionVision: [
     { id: 1, icon: 'flag',       title: 'Misión', description: 'Formar personas íntegras con valores salesianos, competencias técnicas y científicas que contribuyan al desarrollo sostenible de la sociedad.' },
     { id: 2, icon: 'visibility', title: 'Visión', description: 'Ser una institución educativa de referencia nacional, reconocida por la excelencia académica, la innovación pedagógica y el compromiso con la comunidad.' },
