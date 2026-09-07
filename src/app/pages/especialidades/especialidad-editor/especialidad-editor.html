@@ -445,8 +445,13 @@
           <input [(ngModel)]="especialidad.perfilCoordinador!.telefono" (ngModelChange)="onCambio()" placeholder="+593 99 000 0000" class="input" />
         </div>
         <div class="md:col-span-2">
-          <label class="label">URL de foto</label>
-          <input [(ngModel)]="especialidad.perfilCoordinador!.foto" (ngModelChange)="onCambio()" placeholder="https://..." class="input" />
+          <app-image-url-input
+            label="Foto del coordinador"
+            [(ngModel)]="especialidad.perfilCoordinador!.foto"
+            (ngModelChange)="onCambio()"
+            placeholder="https://..."
+            previewHeight="h-32"
+            alt="Foto coordinador" />
           @if (especialidad.perfilCoordinador!.foto) {
             <div class="mt-3 flex items-center gap-4">
               <img [src]="especialidad.perfilCoordinador!.foto" alt="Foto coordinador"
