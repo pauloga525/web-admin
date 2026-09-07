@@ -36,7 +36,7 @@ const DEFAULTS: Record<string, NivelConfig> = {
     ],
     environmentTitle: 'Un ambiente diseñado para crecer',
     environmentDescription: 'Nuestras aulas están equipadas con rincones de aprendizaje, materiales Montessori y espacios verdes para el juego libre.',
-    environmentImagen: '',
+    environmentImages: [],
     ctaDescripcion: 'Agenda una visita al campus o contáctanos para resolver todas tus dudas sobre este nivel.',
   },
 
@@ -71,7 +71,7 @@ const DEFAULTS: Record<string, NivelConfig> = {
     ],
     environmentTitle: 'Espacios que inspiran el aprendizaje',
     environmentDescription: 'Aulas luminosas, biblioteca infantil y laboratorio de computación adaptado para los más pequeños.',
-    environmentImagen: '',
+    environmentImages: [],
     ctaDescripcion: 'Agenda una visita al campus o contáctanos para resolver todas tus dudas sobre este nivel.',
   },
 
@@ -107,7 +107,7 @@ const DEFAULTS: Record<string, NivelConfig> = {
     ],
     environmentTitle: 'Tecnología al servicio del aprendizaje',
     environmentDescription: 'Laboratorios de ciencias, aulas digitales interactivas y espacios de trabajo colaborativo.',
-    environmentImagen: '',
+    environmentImages: [],
     ctaDescripcion: 'Agenda una visita al campus o contáctanos para resolver todas tus dudas sobre este nivel.',
   },
 
@@ -144,7 +144,7 @@ const DEFAULTS: Record<string, NivelConfig> = {
     ],
     environmentTitle: 'Preparados para el siguiente nivel',
     environmentDescription: 'Biblioteca especializada, laboratorios equipados y orientación vocacional para la transición al bachillerato.',
-    environmentImagen: '',
+    environmentImages: [],
     ctaDescripcion: 'Agenda una visita al campus o contáctanos para resolver todas tus dudas sobre este nivel.',
   },
 };
@@ -156,10 +156,27 @@ export class NivelService {
 
   get(nivelId: string): Observable<NivelConfig> {
     const def = DEFAULTS[nivelId] ?? DEFAULTS['preparatoria'];
-    return this.configApi.get<NivelConfig>(CLAVE(nivelId)).pipe(
-      map(data => (data && Object.keys(data).length) ? { ...def, ...data } : { ...def }),
+    return this.configApi.get<any>(CLAVE(nivelId)).pipe(
+      map(data => this.mergeConDefault(def, data)),
       catchError(() => of({ ...def })),
     );
+  }
+
+  /**
+   * Combina lo guardado con los valores por defecto de ese nivel, y migra
+   * el campo viejo 'environmentImagen' (una sola imagen, string) a
+   * 'environmentImages' (arreglo) si el documento todavía no tiene el
+   * campo nuevo — para no perder una imagen que ya estaba cargada.
+   */
+  private mergeConDefault(def: NivelConfig, data: any): NivelConfig {
+    if (!data || !Object.keys(data).length) return { ...def };
+    const merged: NivelConfig = { ...def, ...data };
+    if (!Array.isArray(merged.environmentImages) || !merged.environmentImages.length) {
+      merged.environmentImages = (typeof data.environmentImagen === 'string' && data.environmentImagen)
+        ? [data.environmentImagen]
+        : [...def.environmentImages];
+    }
+    return merged;
   }
 
   guardar(config: NivelConfig): Observable<void> {

@@ -41,10 +41,12 @@ export interface NivelConfig {
   curriculumHighlights: NivelCurriculumHighlight[];
   subjects: NivelSubject[];
 
-  // Environment
+  // Environment — antes era una sola imagen (environmentImagen); ahora es
+  // una galería de imágenes del ambiente educativo, subidas a GridFS igual
+  // que el resto de imágenes del sitio.
   environmentTitle: string;
   environmentDescription: string;
-  environmentImagen: string;
+  environmentImages: string[];
 
   // CTA
   ctaDescripcion: string;

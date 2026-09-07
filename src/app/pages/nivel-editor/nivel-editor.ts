@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NivelService } from '../../services/nivel.service';
 import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
+import { IconPickerComponent } from '../../components/icon-picker/icon-picker.component';
 import {
   NivelConfig, NivelKeyFact,
   NivelCurriculumHighlight, NivelSubject,
@@ -10,16 +11,30 @@ import {
 
 type Tab = 'hero' | 'overview' | 'curriculum' | 'environment' | 'cta';
 
+/** Íconos curados para Datos Clave y Destacados del currículo — incluye
+ * todos los que ya usan los 4 niveles por defecto, más algunos de más. */
+export const NIVEL_ICON_OPTIONS: string[] = [
+  'child_care', 'school', 'groups', 'schedule', 'emoji_events', 'star',
+  'trending_up', 'psychology', 'diversity_3', 'workspace_premium',
+  'menu_book', 'auto_stories', 'language', 'translate', 'calculate',
+  'science', 'biotech', 'public', 'computer', 'devices', 'wifi',
+  'brush', 'palette', 'music_note', 'theater_comedy',
+  'sports', 'sports_soccer', 'directions_run', 'eco', 'park',
+  'lightbulb', 'forum', 'campaign', 'medical_services', 'restaurant',
+];
+
 @Component({
   selector: 'app-nivel-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent, IconPickerComponent],
   templateUrl: './nivel-editor.html',
 })
 export class NivelEditor implements OnInit {
 
   @Input() nivelId!: string;
   @Input() titulo!: string;
+
+  readonly iconOptions = NIVEL_ICON_OPTIONS;
 
   config!: NivelConfig;
   tabActiva: Tab = 'hero';
@@ -89,6 +104,16 @@ export class NivelEditor implements OnInit {
   }
   eliminarSubject(id: number): void {
     this.config.subjects = this.config.subjects.filter(s => s.id !== id);
+    this.onChange();
+  }
+
+  // ── Imágenes del ambiente educativo ────────────────────────────────────────
+  agregarImagenAmbiente(): void {
+    this.config.environmentImages.push('');
+    this.onChange();
+  }
+  eliminarImagenAmbiente(index: number): void {
+    this.config.environmentImages.splice(index, 1);
     this.onChange();
   }
 }
