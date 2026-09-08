@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ContactoService, ContactoConfig, ContactoInfo, ContactoRed, ContactoAsunto } from '../../services/contacto.service';
 import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
+import { IconPickerComponent } from '../../components/icon-picker/icon-picker.component';
 
 type Tab = 'hero' | 'info' | 'redes' | 'formulario';
 
@@ -11,7 +12,7 @@ const REDES = ['facebook','twitter','instagram','linkedin','youtube','tiktok'] a
 @Component({
   selector: 'app-contacto',
   standalone: true,
-  imports: [CommonModule, FormsModule, ImageUrlInputComponent],
+  imports: [CommonModule, FormsModule, ImageUrlInputComponent, IconPickerComponent],
   template: `
 <div class="p-8 max-w-4xl mx-auto w-full space-y-6">
 
@@ -87,7 +88,7 @@ const REDES = ['facebook','twitter','instagram','linkedin','youtube','tiktok'] a
           @for (card of config.infoCards; track trackById($index, card)) {
           <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
             <div class="flex items-center gap-2">
-              <input [(ngModel)]="card.icon" (ngModelChange)="onChange()" placeholder="Ícono material" class="w-36 input-field text-xs" />
+              <app-icon-picker class="w-36 shrink-0" [(ngModel)]="card.icon" (ngModelChange)="onChange()" />
               <input [(ngModel)]="card.title" (ngModelChange)="onChange()" placeholder="Título" class="flex-1 input-field font-semibold" />
               <button type="button" (click)="eliminarInfo(card.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>

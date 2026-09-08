@@ -199,7 +199,7 @@
             @for (item of home.porQue; track trackById($index, item)) {
             <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
               <div class="flex items-center gap-3">
-                <input [(ngModel)]="item.icono" (ngModelChange)="onCambioHome()" placeholder="Ícono" class="w-28 px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                <app-icon-picker class="w-28 shrink-0" [(ngModel)]="item.icono" (ngModelChange)="onCambioHome()" />
                 <input [(ngModel)]="item.titulo" (ngModelChange)="onCambioHome()" placeholder="Título" class="flex-1 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30 font-semibold" />
                 <button type="button" (click)="eliminarPorQue(item.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
                   <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>

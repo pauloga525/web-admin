@@ -6,6 +6,7 @@ import { catchError } from 'rxjs/operators';
 import { InstructivosService, InstructivosConfig } from '../../services/instructivos.service';
 import { RecursosApiService, RecursoApi } from '../../services/recursos-api.service';
 import { DocumentUrlInputComponent } from '../../components/document-url-input/document-url-input.component';
+import { IconPickerComponent } from '../../components/icon-picker/icon-picker.component';
 
 type Tab = 'hero' | 'categorias' | 'instructivos';
 
@@ -23,7 +24,7 @@ const TIPOS = ['pdf', 'video'];
 @Component({
   selector: 'app-instructivos',
   standalone: true,
-  imports: [CommonModule, FormsModule, DocumentUrlInputComponent],
+  imports: [CommonModule, FormsModule, DocumentUrlInputComponent, IconPickerComponent],
   template: `
 <div class="p-8 max-w-5xl mx-auto w-full space-y-6">
 
@@ -75,7 +76,7 @@ const TIPOS = ['pdf', 'video'];
         <div class="space-y-2">
           @for (c of config.categorias; track trackById($index, c)) {
           <div class="flex items-center gap-2">
-            <input [(ngModel)]="c.icon" (ngModelChange)="onChangeConfig()" placeholder="Ícono material" class="w-36 input-field text-xs" />
+            <app-icon-picker class="w-36 shrink-0" [(ngModel)]="c.icon" (ngModelChange)="onChangeConfig()" />
             <input [(ngModel)]="c.name" (ngModelChange)="onChangeConfig()" placeholder="Nombre de la categoría" class="flex-1 input-field text-sm" />
             <button type="button" (click)="eliminarCategoria(c.id)" class="text-slate-300 hover:text-red-500 transition shrink-0">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>

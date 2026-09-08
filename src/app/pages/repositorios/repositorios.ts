@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { RepositoriosService, RepositoriosConfig, RepoColeccion, RepoPublicacion, RepoNavLink, RepoStat } from '../../services/repositorios.service';
+import { IconPickerComponent } from '../../components/icon-picker/icon-picker.component';
 
 type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
 
 @Component({
   selector: 'app-repositorios',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, IconPickerComponent],
   template: `
 <div class="p-8 max-w-5xl mx-auto w-full space-y-6">
   <div class="flex items-center justify-between">
@@ -32,7 +33,7 @@ type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
       @if (tabActiva === 'hero') {
       <div class="space-y-4 animate-[fadeIn_.2s_ease_forwards]">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Ícono del badge</label><input [(ngModel)]="config.heroBadgeIcon" (ngModelChange)="onChange()" placeholder="school" class="input-field" /></div>
+          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Ícono del badge</label><app-icon-picker [(ngModel)]="config.heroBadgeIcon" (ngModelChange)="onChange()" /></div>
           <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Texto del badge</label><input [(ngModel)]="config.heroBadgeText" (ngModelChange)="onChange()" class="input-field" /></div>
           <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título</label><input [(ngModel)]="config.heroTitulo" (ngModelChange)="onChange()" class="input-field font-semibold" /></div>
           <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Subtítulo</label><textarea [(ngModel)]="config.heroSubtitulo" (ngModelChange)="onChange()" rows="3" class="input-field resize-none"></textarea></div>
@@ -66,7 +67,7 @@ type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
           @for (c of config.colecciones; track trackById($index, c)) {
           <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-2">
             <div class="flex items-center gap-2">
-              <input [(ngModel)]="c.icon" (ngModelChange)="onChange()" placeholder="Ícono material" class="w-32 input-field text-xs" />
+              <app-icon-picker class="w-32 shrink-0" [(ngModel)]="c.icon" (ngModelChange)="onChange()" />
               <input [(ngModel)]="c.title" (ngModelChange)="onChange()" placeholder="Título" class="flex-1 input-field font-semibold" />
               <input [(ngModel)]="c.count" (ngModelChange)="onChange()" placeholder="Count" class="w-20 input-field text-xs text-center" />
               <button type="button" (click)="eliminarColeccion(c.id)" class="text-slate-300 hover:text-red-500 transition shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg></button>
@@ -131,7 +132,7 @@ type Tab = 'hero' | 'colecciones' | 'publicaciones' | 'sidebar' | 'enlaces';
           <div class="space-y-2">
             @for (l of config.navLinks; track trackById($index, l)) {
             <div class="flex items-center gap-2">
-              <input [(ngModel)]="l.icon" (ngModelChange)="onChange()" placeholder="Ícono" class="w-28 input-field text-xs" />
+              <app-icon-picker class="w-28 shrink-0" [(ngModel)]="l.icon" (ngModelChange)="onChange()" />
               <input [(ngModel)]="l.label" (ngModelChange)="onChange()" placeholder="Etiqueta" class="flex-1 input-field text-sm" />
               <input [(ngModel)]="l.href" (ngModelChange)="onChange()" placeholder="URL" class="flex-1 input-field text-sm" />
               <button type="button" (click)="eliminarNavLink(l.id)" class="text-slate-300 hover:text-red-500 transition shrink-0"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>

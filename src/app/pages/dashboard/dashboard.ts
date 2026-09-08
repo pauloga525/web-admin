@@ -15,6 +15,7 @@ import { HomeService }     from '../../services/home.service';
 import { EventoService }   from '../../services/evento.service';
 import { KpiService, KpiCard } from '../../services/kpi.service';
 import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
+import { IconPickerComponent } from '../../components/icon-picker/icon-picker.component';
 import { environment } from '../../../environments/environment';
 
 import {
@@ -28,7 +29,7 @@ interface SeccionNav { id: string; label: string; }
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterModule, CommonModule, FormsModule, ImageUrlInputComponent],
+  imports: [RouterModule, CommonModule, FormsModule, ImageUrlInputComponent, IconPickerComponent],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })

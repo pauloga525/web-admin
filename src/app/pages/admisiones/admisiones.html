@@ -101,7 +101,7 @@
             <div class="flex items-center gap-2">
               <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">STEP {{s.stepNumber}}</span>
               <input [(ngModel)]="s.stepNumber" (ngModelChange)="onChange()" type="number" min="1" class="w-14 input-field text-xs text-center" />
-              <input [(ngModel)]="s.icon" (ngModelChange)="onChange()" placeholder="Ícono material" class="w-36 input-field text-xs" />
+              <app-icon-picker class="w-36 shrink-0" [(ngModel)]="s.icon" (ngModelChange)="onChange()" />
               <input [(ngModel)]="s.title" (ngModelChange)="onChange()" placeholder="Título" class="flex-1 input-field font-semibold" />
               <button type="button" (click)="eliminarStep(s.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
@@ -129,7 +129,7 @@
           @for (r of config.requisitos; track trackById($index, r)) {
           <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
             <div class="flex items-center gap-2">
-              <input [(ngModel)]="r.icon" (ngModelChange)="onChange()" placeholder="Ícono" class="w-28 input-field text-xs" />
+              <app-icon-picker class="w-28 shrink-0" [(ngModel)]="r.icon" (ngModelChange)="onChange()" />
               <input [(ngModel)]="r.title" (ngModelChange)="onChange()" placeholder="Título" class="flex-1 input-field text-sm font-semibold" />
               <button type="button" (click)="eliminarReq(r.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -152,7 +152,7 @@
         <div class="space-y-2">
           @for (d of config.descargas; track trackById($index, d)) {
           <div class="flex items-center gap-2">
-            <input [(ngModel)]="d.icon" (ngModelChange)="onChange()" placeholder="Ícono" class="w-28 input-field text-xs" />
+            <app-icon-picker class="w-28 shrink-0" [(ngModel)]="d.icon" (ngModelChange)="onChange()" />
             <input [(ngModel)]="d.label" (ngModelChange)="onChange()" placeholder="Etiqueta" class="flex-1 input-field text-sm" />
             <input [(ngModel)]="d.url" (ngModelChange)="onChange()" placeholder="URL descarga" class="flex-1 input-field text-sm" />
             <button type="button" (click)="eliminarDescarga(d.id)" class="text-slate-300 dark:text-slate-600 hover:text-red-500 transition shrink-0">

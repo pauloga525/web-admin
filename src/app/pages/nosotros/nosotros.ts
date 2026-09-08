@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { NosotrosService, NosotrosConfig, MisionVisionItem, ValorItem, TimelineEvent } from '../../services/nosotros.service';
 import { AutoridadesService } from '../../services/autoridades.service';
 import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
+import { IconPickerComponent } from '../../components/icon-picker/icon-picker.component';
 import { Autoridad } from '../../models/api.models';
 
 type Tab = 'hero' | 'misionVision' | 'valores' | 'historia' | 'autoridades' | 'cta';
@@ -12,7 +13,7 @@ type Tab = 'hero' | 'misionVision' | 'valores' | 'historia' | 'autoridades' | 'c
 @Component({
   selector: 'app-nosotros',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ImageUrlInputComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ImageUrlInputComponent, IconPickerComponent],
   templateUrl: './nosotros.html',
 })
 export class Nosotros implements OnInit {
