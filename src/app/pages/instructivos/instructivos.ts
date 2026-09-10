@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { InstructivosService, InstructivosConfig } from '../../services/instructivos.service';
-import { RecursosApiService, RecursoApi } from '../../services/recursos-api.service';
+import { RecursosApiService, RecursoApi, EnlaceRecurso } from '../../services/recursos-api.service';
 import { DocumentUrlInputComponent } from '../../components/document-url-input/document-url-input.component';
 import { IconPickerComponent } from '../../components/icon-picker/icon-picker.component';
 
@@ -17,6 +17,7 @@ interface InstructivoForm {
   type:        'pdf' | 'video';
   categoria:   string;
   url:         string;
+  enlaces:     EnlaceRecurso[];
 }
 
 const TIPOS = ['pdf', 'video'];
@@ -144,9 +145,28 @@ const TIPOS = ['pdf', 'video'];
               @if (inst.type === 'pdf') {
                 <app-document-url-input [(ngModel)]="inst.url" placeholder="URL del PDF/Word o sube un archivo" />
               } @else {
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                  <input [(ngModel)]="inst.url" placeholder="URL del video (YouTube, Vimeo...)" class="flex-1 input-field text-sm" />
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400">Enlaces del video ({{inst.enlaces.length}})</label>
+                    <button type="button" (click)="agregarEnlace(inst)" class="text-xs text-primary hover:underline flex items-center gap-1">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Agregar enlace
+                    </button>
+                  </div>
+                  @for (en of inst.enlaces; track $index) {
+                  <div class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-2">
+                    <svg class="w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    <div class="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input [(ngModel)]="en.url" placeholder="URL del video (YouTube, Vimeo...)" class="input-field text-sm" />
+                      <input [(ngModel)]="en.descripcion" placeholder="Descripción (ej: Parte 1 - Registro)" class="input-field text-sm" />
+                    </div>
+                    <button type="button" (click)="eliminarEnlace(inst, $index)" class="text-slate-300 hover:text-red-500 transition shrink-0">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                  }
+                  @if (!inst.enlaces.length) {
+                    <p class="text-xs text-slate-400 italic py-2 text-center">Sin enlaces — agrega uno arriba.</p>
+                  }
                 </div>
               }
 
@@ -207,6 +227,9 @@ export class Instructivos implements OnInit {
   }
 
   private desdeRecurso(r: RecursoApi): InstructivoForm {
+    // Compatibilidad con instructivos antiguos guardados solo con `url` (sin `enlaces`).
+    const enlaces = (r.enlaces?.length ? r.enlaces : (r.url ? [{ url: r.url, descripcion: '' }] : []))
+      .map(e => ({ url: e.url, descripcion: e.descripcion || '' }));
     return {
       _id: r._id,
       title: r.titulo,
@@ -214,6 +237,7 @@ export class Instructivos implements OnInit {
       type: r.tipo === 'video' ? 'video' : 'pdf',
       categoria: r.categoria,
       url: r.url,
+      enlaces,
     };
   }
 
@@ -221,7 +245,9 @@ export class Instructivos implements OnInit {
     return {
       titulo: i.title,
       descripcion: i.description,
-      url: i.url,
+      // El campo legado `url` guarda el primer enlace, por si algo más lo lee directamente.
+      url: i.type === 'video' ? (i.enlaces[0]?.url ?? '') : i.url,
+      enlaces: i.type === 'video' ? i.enlaces.filter(e => e.url.trim()) : [],
       categoria: i.categoria,
       tipo: i.type,
       publicado: true,
@@ -288,8 +314,17 @@ export class Instructivos implements OnInit {
       title: '', description: '', type: 'pdf',
       categoria: this.config.categorias[0]?.name ?? '',
       url: '',
+      enlaces: [],
     });
     this.expandidoInstructivo = this.instructivos.length - 1;
+  }
+
+  agregarEnlace(inst: InstructivoForm): void {
+    inst.enlaces.push({ url: '', descripcion: '' });
+  }
+
+  eliminarEnlace(inst: InstructivoForm, index: number): void {
+    inst.enlaces.splice(index, 1);
   }
 
   guardarInstructivo(index: number): void {
