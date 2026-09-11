@@ -10,17 +10,26 @@ import { IconPickerComponent } from '../../components/icon-picker/icon-picker.co
 
 type Tab = 'hero' | 'categorias' | 'instructivos';
 
+type TipoInstructivo = 'pdf' | 'word' | 'excel' | 'video';
+
 interface InstructivoForm {
   _id?:        string;
   title:       string;
   description: string;
-  type:        'pdf' | 'video';
+  type:        TipoInstructivo;
   categoria:   string;
   url:         string;
   enlaces:     EnlaceRecurso[];
 }
 
-const TIPOS = ['pdf', 'video'];
+const TIPOS = ['pdf', 'word', 'excel', 'video'];
+
+/** Config del selector de archivo por tipo de documento (todo lo que no es video). */
+const DOC_ACCEPT: Record<'pdf' | 'word' | 'excel', { accept: string; extensiones: string[]; label: string }> = {
+  pdf:   { accept: '.pdf',            extensiones: ['.pdf'],          label: 'PDF' },
+  word:  { accept: '.doc,.docx',      extensiones: ['.doc', '.docx'], label: 'Word' },
+  excel: { accept: '.xls,.xlsx,.csv', extensiones: ['.xls', '.xlsx', '.csv'], label: 'Excel' },
+};
 
 @Component({
   selector: 'app-instructivos',
@@ -110,9 +119,8 @@ const TIPOS = ['pdf', 'video'];
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
                 </svg>
               </button>
-              <span class="shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded-full"
-                [class]="inst.type === 'pdf' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'">
-                {{ inst.type === 'pdf' ? 'PDF' : 'Video' }}
+              <span class="shrink-0 text-[10px] font-bold uppercase px-2 py-1 rounded-full" [class]="getBadgeClass(inst.type)">
+                {{ getTipoLabel(inst.type) }}
               </span>
               <input [(ngModel)]="inst.title" placeholder="Título del documento"
                 class="flex-1 min-w-0 bg-transparent border-0 border-b-2 text-sm font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-0 px-1 py-0.5"
@@ -132,7 +140,9 @@ const TIPOS = ['pdf', 'video'];
               <div class="flex items-center gap-2">
                 <select [(ngModel)]="inst.type"
                   class="text-xs border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 shrink-0">
-                  <option value="pdf">PDF / Word</option>
+                  <option value="pdf">PDF</option>
+                  <option value="word">Word</option>
+                  <option value="excel">Excel</option>
                   <option value="video">Video</option>
                 </select>
                 <select [(ngModel)]="inst.categoria"
@@ -142,8 +152,12 @@ const TIPOS = ['pdf', 'video'];
               </div>
               <textarea [(ngModel)]="inst.description" rows="2" placeholder="Descripción breve" class="w-full input-field resize-none text-sm"></textarea>
 
-              @if (inst.type === 'pdf') {
-                <app-document-url-input [(ngModel)]="inst.url" placeholder="URL del PDF/Word o sube un archivo" />
+              @if (inst.type === 'pdf' || inst.type === 'word' || inst.type === 'excel') {
+                <app-document-url-input [(ngModel)]="inst.url"
+                  [placeholder]="'URL del ' + getTipoLabel(inst.type) + ' o sube un archivo'"
+                  [accept]="getDocAccept(inst.type).accept"
+                  [allowedExtensions]="getDocAccept(inst.type).extensiones"
+                  [tipoLabel]="getDocAccept(inst.type).label" />
               } @else {
                 <div class="space-y-2">
                   <div class="flex items-center justify-between">
@@ -230,15 +244,33 @@ export class Instructivos implements OnInit {
     // Compatibilidad con instructivos antiguos guardados solo con `url` (sin `enlaces`).
     const enlaces = (r.enlaces?.length ? r.enlaces : (r.url ? [{ url: r.url, descripcion: '' }] : []))
       .map(e => ({ url: e.url, descripcion: e.descripcion || '' }));
+    const type = (TIPOS.includes(r.tipo) ? r.tipo : 'pdf') as TipoInstructivo;
     return {
       _id: r._id,
       title: r.titulo,
       description: r.descripcion,
-      type: r.tipo === 'video' ? 'video' : 'pdf',
+      type,
       categoria: r.categoria,
       url: r.url,
       enlaces,
     };
+  }
+
+  getTipoLabel(type: TipoInstructivo): string {
+    return type === 'video' ? 'Video' : type === 'pdf' ? 'PDF' : type === 'word' ? 'Word' : 'Excel';
+  }
+
+  getBadgeClass(type: TipoInstructivo): string {
+    switch (type) {
+      case 'word':  return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'excel': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      case 'video': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+      default:      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'; // pdf
+    }
+  }
+
+  getDocAccept(type: 'pdf' | 'word' | 'excel') {
+    return DOC_ACCEPT[type];
   }
 
   private aRecurso(i: InstructivoForm, orden: number) {

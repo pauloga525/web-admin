@@ -53,7 +53,7 @@ import { environment } from '../../../environments/environment';
         </button>
       </div>
 
-      <input #fileInput type="file" accept=".pdf,.doc,.docx" hidden (change)="onFileSelected($event)" />
+      <input #fileInput type="file" [attr.accept]="accept" hidden (change)="onFileSelected($event)" />
 
       @if (fileName) {
         <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">📄 {{ fileName }}</p>
@@ -68,6 +68,12 @@ export class DocumentUrlInputComponent implements ControlValueAccessor {
   @Input() label = '';
   @Input() placeholder = 'https://... o sube un PDF/Word';
   @Input() uploadUrl = `${environment.apiUrl}/documentos`;
+  /** Extensiones aceptadas por el selector de archivo, ej: '.pdf,.doc,.docx'. */
+  @Input() accept = '.pdf,.doc,.docx';
+  /** Mismas extensiones que `accept`, en minúsculas, para validar el archivo elegido. */
+  @Input() allowedExtensions: string[] = ['.pdf', '.doc', '.docx'];
+  /** Usado en el mensaje de error cuando el archivo no coincide con `allowedExtensions`. */
+  @Input() tipoLabel = 'PDF o Word';
   @Output() valueChanged = new EventEmitter<string>();
 
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
@@ -118,8 +124,8 @@ export class DocumentUrlInputComponent implements ControlValueAccessor {
     if (!file) return;
 
     const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
-    if (!['.pdf', '.doc', '.docx'].includes(ext)) {
-      this.error = 'Solo se permiten archivos PDF o Word (.pdf, .doc, .docx).';
+    if (!this.allowedExtensions.includes(ext)) {
+      this.error = `Solo se permiten archivos ${this.tipoLabel} (${this.allowedExtensions.join(', ')}).`;
       input.value = '';
       return;
     }
