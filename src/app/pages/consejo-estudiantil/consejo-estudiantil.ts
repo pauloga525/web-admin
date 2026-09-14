@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ConsejoApiService, MiembroConsejoApi, MiembroConsejoDto } from '../../services/consejo-api.service';
+import { ConsejoPageService, ConsejoPageConfig } from '../../services/consejo-page.service';
 import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
 interface MiembroForm {
@@ -32,7 +33,12 @@ interface MiembroForm {
       } @else { <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> {{ guardando ? 'Guardando...' : 'Guardar cambios' }} }
     </button>
   </div>
-  <p class="text-xs text-slate-500 dark:text-slate-400 -mt-4">Este botón guarda <strong>todos</strong> los miembros de la lista de abajo (incluidas sus fotos).</p>
+  <p class="text-xs text-slate-500 dark:text-slate-400 -mt-4">Este botón guarda la imagen de fondo y <strong>todos</strong> los miembros de la lista de abajo (incluidas sus fotos).</p>
+
+  <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden p-6 space-y-4">
+    <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Imagen de fondo del hero</h3>
+    <app-image-url-input [(ngModel)]="config.heroImagen" (ngModelChange)="onChangeConfig()" placeholder="https://..." previewHeight="h-40" />
+  </div>
 
   <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden p-6">
     <div class="flex items-center justify-between mb-4">
@@ -76,17 +82,25 @@ interface MiembroForm {
 })
 export class ConsejoEstudiantil implements OnInit {
 
+  config!: ConsejoPageConfig;
   miembros: MiembroForm[] = [];
   guardado = false;
   guardando = false;
   error = '';
   private timer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private api: ConsejoApiService) {}
+  constructor(
+    private api: ConsejoApiService,
+    private pageSvc: ConsejoPageService,
+  ) {}
 
   ngOnInit(): void {
+    this.config = this.pageSvc.getCopia();
+    this.pageSvc.cargarDesdeBackend().subscribe(cfg => { this.config = cfg; });
     this.cargar();
   }
+
+  onChangeConfig(): void { this.guardado = false; }
 
   private cargar(): void {
     this.api.list().subscribe(list => {
@@ -113,6 +127,7 @@ export class ConsejoEstudiantil implements OnInit {
     const conNombre = this.miembros.filter(m => m.nombre.trim().length > 0);
     const sinNombre = this.miembros.length - conNombre.length;
 
+    const config$ = this.pageSvc.guardar(this.config).pipe(catchError(() => of(null)));
     const requests = conNombre.map((m, i) => {
       const dto: MiembroConsejoDto = {
         titulo: m.titulo, nombre: m.nombre, descripcion: m.descripcion, imagen: m.imagen,
@@ -122,18 +137,9 @@ export class ConsejoEstudiantil implements OnInit {
       return req.pipe(catchError(() => of(null)));
     });
 
-    if (!requests.length) {
+    forkJoin([config$, ...requests]).subscribe(results => {
       this.guardando = false;
-      if (sinNombre > 0) this.error = `${sinNombre} miembro(s) sin nombre no se guardaron (el nombre es obligatorio).`;
-      this.guardado = true;
-      if (this.timer) clearTimeout(this.timer);
-      this.timer = setTimeout(() => this.guardado = false, 3000);
-      return;
-    }
-
-    forkJoin(requests).subscribe(results => {
-      this.guardando = false;
-      const fallos = results.filter(r => r === null).length;
+      const fallos = results.slice(1).filter(r => r === null).length;
 
       if (fallos > 0) {
         this.error = `${fallos} miembro(s) no se pudieron guardar. Revisa tu conexión e inténtalo de nuevo.`;
