@@ -29,6 +29,7 @@ import { Uniformes }           from './pages/uniformes/uniformes';
 import { Biblioteca }          from './pages/biblioteca/biblioteca';
 import { Instructivos }        from './pages/instructivos/instructivos';
 import { Repositorios }        from './pages/repositorios/repositorios';
+import { Boscometro }          from './pages/boscometro/boscometro';
 import { Configuracion }       from './pages/configuracion/configuracion';
 import { Actividad }           from './pages/actividad/actividad';
 import { authGuard }           from './guards/auth.guard';
@@ -59,6 +60,7 @@ export const routes: Routes = [
   { path: 'biblioteca',          canActivate: [authGuard], component: Biblioteca,         data: { animation: 'Biblioteca',          breadcrumb: 'Biblioteca'            } },
   { path: 'instructivos',        canActivate: [authGuard], component: Instructivos,       data: { animation: 'Instructivos',        breadcrumb: 'Instructivos'          } },
   { path: 'repositorios',        canActivate: [authGuard], component: Repositorios,       data: { animation: 'Repositorios',        breadcrumb: 'Repositorios'          } },
+  { path: 'boscometro',          canActivate: [authGuard], component: Boscometro,         data: { animation: 'Boscometro',          breadcrumb: 'Boscómetro'            } },
   { path: 'configuracion',       canActivate: [authGuard], component: Configuracion,      data: { animation: 'Configuracion',       breadcrumb: 'Configuración'         } },
   { path: 'actividad',           canActivate: [authGuard], component: Actividad,          data: { animation: 'Actividad',           breadcrumb: 'Actividad reciente'    } },
   {

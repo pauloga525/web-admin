@@ -14,6 +14,18 @@ export interface EnlaceRecurso {
   descripcion: string;
 }
 
+/** Una fila de una tabla de Boscómetro importada desde Excel. */
+export interface FilaTablaBoscometro {
+  valores: string[];
+  esEncabezado: boolean;
+}
+
+/** Un punto (curso + total) de un gráfico de Boscómetro importado desde Excel. */
+export interface PuntoGraficoBoscometro {
+  curso: string;
+  total: number;
+}
+
 export interface RecursoApi {
   _id: string;
   titulo: string;
@@ -24,6 +36,10 @@ export interface RecursoApi {
   categoria: string;
   tags: string[];
   enlaces: EnlaceRecurso[];
+  /** Solo presente en recursos tipo 'boscometro_tabla'. */
+  filas?: FilaTablaBoscometro[];
+  /** Solo presente en recursos tipo 'boscometro_grafico'. */
+  datos?: PuntoGraficoBoscometro[];
   publicado: boolean;
   orden: number;
   createdAt: string;
@@ -70,5 +86,22 @@ export class RecursosApiService {
 
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.url}/${id}`);
+  }
+
+  /** Sube un .xlsx y lo guarda como recurso tipo 'boscometro_tabla' (el backend lo parsea). */
+  importarTablaBoscometro(titulo: string, file: File): Observable<RecursoApi> {
+    const form = new FormData();
+    form.append('titulo', titulo);
+    form.append('file', file);
+    return this.http.post<RecursoApi>(`${this.url}/boscometro/tablas`, form);
+  }
+
+  /** Sube un .xlsx (2 columnas: curso, total) y lo guarda como 'boscometro_grafico'. */
+  importarGraficoBoscometro(titulo: string, subtitulo: string, file: File): Observable<RecursoApi> {
+    const form = new FormData();
+    form.append('titulo', titulo);
+    form.append('subtitulo', subtitulo);
+    form.append('file', file);
+    return this.http.post<RecursoApi>(`${this.url}/boscometro/graficos`, form);
   }
 }

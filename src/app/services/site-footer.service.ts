@@ -52,6 +52,7 @@ const DEFAULT: SiteFooterConfig = {
     { id: 4, label: 'Admisiones',     href: '/admisiones'     },
     { id: 5, label: 'Eventos',        href: '/eventos'        },
     { id: 6, label: 'Contacto',       href: '/contacto'       },
+    { id: 7, label: 'Boscómetro',     href: '/boscometro'     },
   ],
   contactoTitulo: 'Contacto',
   direccion:  'Av. Don Bosco s/n, Cuenca, Ecuador',
