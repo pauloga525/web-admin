@@ -38,7 +38,7 @@ const TIPO_GRAFICO = 'boscometro_grafico';
     <div class="flex items-center justify-between">
       <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tablas de puntajes ({{tablas.length}})</h3>
     </div>
-    <p class="text-xs text-slate-500 dark:text-slate-400">Sube un archivo Excel (.xlsx) — cada fila se convierte en una fila de la tabla. Las filas con color de fondo en el Excel se muestran resaltadas.</p>
+    <p class="text-xs text-slate-500 dark:text-slate-400">Sube un archivo Excel (.xlsx) o importa desde un enlace de Google Sheets/Drive — cada fila se convierte en una fila de la tabla. Las filas con color de fondo en el Excel se muestran resaltadas.</p>
 
     <!-- Form de importación -->
     <div class="border border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-4 space-y-3">
@@ -46,15 +46,39 @@ const TIPO_GRAFICO = 'boscometro_grafico';
         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título de la tabla</label>
         <input [(ngModel)]="nuevaTablaTitulo" placeholder="Ej: Tabla de Puntajes Obtenidos" class="input-field" />
       </div>
-      <div class="flex items-center gap-2">
-        <input #tablaFile type="file" accept=".xlsx,.xls" (change)="onTablaFileSelected($event)" class="flex-1 text-xs" />
-        <button type="button" (click)="importarTabla(); tablaFile.value = ''" [disabled]="!nuevaTablaTitulo.trim() || !tablaFileSeleccionado || importandoTabla"
-          class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          {{ importandoTabla ? 'Importando...' : 'Importar tabla' }}
-        </button>
+
+      <div class="flex items-center gap-4 text-xs font-medium text-slate-600 dark:text-slate-400">
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="fuenteTabla" value="archivo" [(ngModel)]="fuenteTabla" /> Archivo Excel
+        </label>
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="fuenteTabla" value="google" [(ngModel)]="fuenteTabla" /> Google Drive
+        </label>
       </div>
+
+      @if (fuenteTabla === 'archivo') {
+        <div class="flex items-center gap-2">
+          <input #tablaFile type="file" accept=".xlsx,.xls" (change)="onTablaFileSelected($event)" class="flex-1 text-xs" />
+          <button type="button" (click)="importarTabla(); tablaFile.value = ''" [disabled]="!nuevaTablaTitulo.trim() || !tablaFileSeleccionado || importandoTabla"
+            class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            {{ importandoTabla ? 'Importando...' : 'Importar tabla' }}
+          </button>
+        </div>
+      } @else {
+        <div class="flex items-center gap-2">
+          <input [(ngModel)]="tablaUrlDrive" placeholder="Pega aquí el enlace de Google Sheets o Drive" class="input-field flex-1" />
+          <button type="button" (click)="importarTablaDesdeUrl()" [disabled]="!nuevaTablaTitulo.trim() || !tablaUrlDrive.trim() || importandoTabla"
+            class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            {{ importandoTabla ? 'Cargando...' : 'Cargar datos' }}
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400">El archivo debe ser público o estar compartido como "Cualquiera con el enlace".</p>
+      }
+
       @if (errorTabla) { <p class="text-xs text-red-500">{{errorTabla}}</p> }
+      @if (exitoTabla) { <p class="text-xs text-green-600">{{exitoTabla}}</p> }
     </div>
 
     <!-- Lista -->
@@ -80,7 +104,7 @@ const TIPO_GRAFICO = 'boscometro_grafico';
     <div class="flex items-center justify-between">
       <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Gráficos ({{graficos.length}})</h3>
     </div>
-    <p class="text-xs text-slate-500 dark:text-slate-400">Sube un archivo Excel (.xlsx) con 2 columnas: <strong>Curso</strong> y <strong>Total</strong> — se genera un gráfico de barras automáticamente.</p>
+    <p class="text-xs text-slate-500 dark:text-slate-400">Sube un archivo Excel (.xlsx) o importa desde Google Sheets/Drive con 2 columnas: <strong>Curso</strong> y <strong>Total</strong> — se genera un gráfico de barras automáticamente.</p>
 
     <!-- Form de importación -->
     <div class="border border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-4 space-y-3">
@@ -94,15 +118,39 @@ const TIPO_GRAFICO = 'boscometro_grafico';
           <input [(ngModel)]="nuevoGraficoSubtitulo" placeholder="Ej: Boscómetro Preparatoria - Elemental 2025 - 2026" class="input-field" />
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <input #graficoFile type="file" accept=".xlsx,.xls" (change)="onGraficoFileSelected($event)" class="flex-1 text-xs" />
-        <button type="button" (click)="importarGrafico(); graficoFile.value = ''" [disabled]="!nuevoGraficoTitulo.trim() || !graficoFileSeleccionado || importandoGrafico"
-          class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          {{ importandoGrafico ? 'Importando...' : 'Importar gráfico' }}
-        </button>
+
+      <div class="flex items-center gap-4 text-xs font-medium text-slate-600 dark:text-slate-400">
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="fuenteGrafico" value="archivo" [(ngModel)]="fuenteGrafico" /> Archivo Excel
+        </label>
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="fuenteGrafico" value="google" [(ngModel)]="fuenteGrafico" /> Google Drive
+        </label>
       </div>
+
+      @if (fuenteGrafico === 'archivo') {
+        <div class="flex items-center gap-2">
+          <input #graficoFile type="file" accept=".xlsx,.xls" (change)="onGraficoFileSelected($event)" class="flex-1 text-xs" />
+          <button type="button" (click)="importarGrafico(); graficoFile.value = ''" [disabled]="!nuevoGraficoTitulo.trim() || !graficoFileSeleccionado || importandoGrafico"
+            class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            {{ importandoGrafico ? 'Importando...' : 'Importar gráfico' }}
+          </button>
+        </div>
+      } @else {
+        <div class="flex items-center gap-2">
+          <input [(ngModel)]="graficoUrlDrive" placeholder="Pega aquí el enlace de Google Sheets o Drive" class="input-field flex-1" />
+          <button type="button" (click)="importarGraficoDesdeUrl()" [disabled]="!nuevoGraficoTitulo.trim() || !graficoUrlDrive.trim() || importandoGrafico"
+            class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            {{ importandoGrafico ? 'Cargando...' : 'Cargar datos' }}
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400">El archivo debe ser público o estar compartido como "Cualquiera con el enlace".</p>
+      }
+
       @if (errorGrafico) { <p class="text-xs text-red-500">{{errorGrafico}}</p> }
+      @if (exitoGrafico) { <p class="text-xs text-green-600">{{exitoGrafico}}</p> }
     </div>
 
     <!-- Lista -->
@@ -135,17 +183,25 @@ export class Boscometro implements OnInit {
   graficos: RecursoApi[] = [];
 
   nuevaTablaTitulo = '';
+  fuenteTabla: 'archivo' | 'google' = 'archivo';
   tablaFileSeleccionado: File | null = null;
+  tablaUrlDrive = '';
   importandoTabla = false;
   errorTabla = '';
+  exitoTabla = '';
 
   nuevoGraficoTitulo = '';
   nuevoGraficoSubtitulo = '';
+  fuenteGrafico: 'archivo' | 'google' = 'archivo';
   graficoFileSeleccionado: File | null = null;
+  graficoUrlDrive = '';
   importandoGrafico = false;
   errorGrafico = '';
+  exitoGrafico = '';
 
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private timerTabla: ReturnType<typeof setTimeout> | null = null;
+  private timerGrafico: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private recursos: RecursosApiService,
@@ -199,11 +255,31 @@ export class Boscometro implements OnInit {
         this.importandoTabla = false;
         this.nuevaTablaTitulo = '';
         this.tablaFileSeleccionado = null;
+        this.mostrarExitoTabla();
         this.cargarRecursos();
       },
       error: (err) => {
         this.importandoTabla = false;
         this.errorTabla = err?.error?.detail || 'No se pudo importar el archivo. Verifica que sea un Excel válido.';
+      },
+    });
+  }
+
+  importarTablaDesdeUrl(): void {
+    if (!this.tablaUrlDrive.trim() || !this.nuevaTablaTitulo.trim()) return;
+    this.errorTabla = '';
+    this.importandoTabla = true;
+    this.recursos.importarTablaBoscometroDesdeUrl(this.nuevaTablaTitulo.trim(), this.tablaUrlDrive.trim()).subscribe({
+      next: () => {
+        this.importandoTabla = false;
+        this.nuevaTablaTitulo = '';
+        this.tablaUrlDrive = '';
+        this.mostrarExitoTabla();
+        this.cargarRecursos();
+      },
+      error: (err) => {
+        this.importandoTabla = false;
+        this.errorTabla = err?.error?.detail || 'No se pudo cargar el archivo desde Google Drive.';
       },
     });
   }
@@ -218,6 +294,7 @@ export class Boscometro implements OnInit {
         this.nuevoGraficoTitulo = '';
         this.nuevoGraficoSubtitulo = '';
         this.graficoFileSeleccionado = null;
+        this.mostrarExitoGrafico();
         this.cargarRecursos();
       },
       error: (err) => {
@@ -225,6 +302,38 @@ export class Boscometro implements OnInit {
         this.errorGrafico = err?.error?.detail || 'No se pudo importar el archivo. Verifica que tenga 2 columnas: curso y total.';
       },
     });
+  }
+
+  importarGraficoDesdeUrl(): void {
+    if (!this.graficoUrlDrive.trim() || !this.nuevoGraficoTitulo.trim()) return;
+    this.errorGrafico = '';
+    this.importandoGrafico = true;
+    this.recursos.importarGraficoBoscometroDesdeUrl(this.nuevoGraficoTitulo.trim(), this.nuevoGraficoSubtitulo.trim(), this.graficoUrlDrive.trim()).subscribe({
+      next: () => {
+        this.importandoGrafico = false;
+        this.nuevoGraficoTitulo = '';
+        this.nuevoGraficoSubtitulo = '';
+        this.graficoUrlDrive = '';
+        this.mostrarExitoGrafico();
+        this.cargarRecursos();
+      },
+      error: (err) => {
+        this.importandoGrafico = false;
+        this.errorGrafico = err?.error?.detail || 'No se pudo cargar el archivo desde Google Drive.';
+      },
+    });
+  }
+
+  private mostrarExitoTabla(): void {
+    this.exitoTabla = 'Datos cargados correctamente.';
+    if (this.timerTabla) clearTimeout(this.timerTabla);
+    this.timerTabla = setTimeout(() => this.exitoTabla = '', 4000);
+  }
+
+  private mostrarExitoGrafico(): void {
+    this.exitoGrafico = 'Datos cargados correctamente.';
+    if (this.timerGrafico) clearTimeout(this.timerGrafico);
+    this.timerGrafico = setTimeout(() => this.exitoGrafico = '', 4000);
   }
 
   eliminarRecurso(r: RecursoApi, tipo: 'tabla' | 'grafico'): void {

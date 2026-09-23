@@ -104,4 +104,14 @@ export class RecursosApiService {
     form.append('file', file);
     return this.http.post<RecursoApi>(`${this.url}/boscometro/graficos`, form);
   }
+
+  /** Importa una tabla desde un enlace público de Google Sheets/Drive (el backend lo descarga y parsea). */
+  importarTablaBoscometroDesdeUrl(titulo: string, sourceUrl: string): Observable<RecursoApi> {
+    return this.http.post<RecursoApi>(`${this.url}/boscometro/tablas/desde-url`, { titulo, sourceUrl });
+  }
+
+  /** Importa un gráfico desde un enlace público de Google Sheets/Drive (el backend lo descarga y parsea). */
+  importarGraficoBoscometroDesdeUrl(titulo: string, subtitulo: string, sourceUrl: string): Observable<RecursoApi> {
+    return this.http.post<RecursoApi>(`${this.url}/boscometro/graficos/desde-url`, { titulo, subtitulo, sourceUrl });
+  }
 }
