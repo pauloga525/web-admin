@@ -40,6 +40,8 @@ export interface RecursoApi {
   filas?: FilaTablaBoscometro[];
   /** Solo presente en recursos tipo 'boscometro_grafico'. */
   datos?: PuntoGraficoBoscometro[];
+  /** Vincula una tabla con su gráfico cuando se importaron juntos como una sección. */
+  seccionId?: string;
   publicado: boolean;
   orden: number;
   createdAt: string;
@@ -113,5 +115,22 @@ export class RecursosApiService {
   /** Importa un gráfico desde un enlace público de Google Sheets/Drive (el backend lo descarga y parsea). */
   importarGraficoBoscometroDesdeUrl(titulo: string, subtitulo: string, sourceUrl: string): Observable<RecursoApi> {
     return this.http.post<RecursoApi>(`${this.url}/boscometro/graficos/desde-url`, { titulo, subtitulo, sourceUrl });
+  }
+
+  /**
+   * Sube un .xlsx con 2 hojas (tabla + datos de gráfico) y crea ambos recursos
+   * vinculados por `seccionId` en una sola operación.
+   */
+  importarSeccionBoscometro(titulo: string, subtitulo: string, file: File): Observable<{ tabla: RecursoApi; grafico: RecursoApi }> {
+    const form = new FormData();
+    form.append('titulo', titulo);
+    form.append('subtitulo', subtitulo);
+    form.append('file', file);
+    return this.http.post<{ tabla: RecursoApi; grafico: RecursoApi }>(`${this.url}/boscometro/secciones`, form);
+  }
+
+  /** Igual que `importarSeccionBoscometro` pero descargando el archivo desde un enlace de Google Sheets/Drive. */
+  importarSeccionBoscometroDesdeUrl(titulo: string, subtitulo: string, sourceUrl: string): Observable<{ tabla: RecursoApi; grafico: RecursoApi }> {
+    return this.http.post<{ tabla: RecursoApi; grafico: RecursoApi }>(`${this.url}/boscometro/secciones/desde-url`, { titulo, subtitulo, sourceUrl });
   }
 }

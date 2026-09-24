@@ -8,6 +8,14 @@ import { ImageUrlInputComponent } from '../../components/image-url-input/image-u
 const TIPO_TABLA = 'boscometro_tabla';
 const TIPO_GRAFICO = 'boscometro_grafico';
 
+/** Una sección agrupa la tabla y el gráfico que se importaron juntos (mismo seccionId). */
+interface SeccionBoscometro {
+  key: string;
+  orden: number;
+  tabla?: RecursoApi;
+  grafico?: RecursoApi;
+}
+
 @Component({
   selector: 'app-boscometro',
   standalone: true,
@@ -33,141 +41,75 @@ const TIPO_GRAFICO = 'boscometro_grafico';
     <app-image-url-input [(ngModel)]="config.heroImagen" (ngModelChange)="onChangeConfig()" placeholder="https://..." previewHeight="h-40" />
   </div>
 
-  <!-- TABLAS -->
+  <!-- SECCIONES (TABLA + GRÁFICO) -->
   <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden p-6 space-y-4">
     <div class="flex items-center justify-between">
-      <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tablas de puntajes ({{tablas.length}})</h3>
+      <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Secciones ({{secciones.length}})</h3>
     </div>
-    <p class="text-xs text-slate-500 dark:text-slate-400">Sube un archivo Excel (.xlsx) o importa desde un enlace de Google Sheets/Drive — cada fila se convierte en una fila de la tabla. Las filas con color de fondo en el Excel se muestran resaltadas.</p>
-
-    <!-- Form de importación -->
-    <div class="border border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-4 space-y-3">
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título de la tabla</label>
-        <input [(ngModel)]="nuevaTablaTitulo" placeholder="Ej: Tabla de Puntajes Obtenidos" class="input-field" />
-      </div>
-
-      <div class="flex items-center gap-4 text-xs font-medium text-slate-600 dark:text-slate-400">
-        <label class="flex items-center gap-1.5 cursor-pointer">
-          <input type="radio" name="fuenteTabla" value="archivo" [(ngModel)]="fuenteTabla" /> Archivo Excel
-        </label>
-        <label class="flex items-center gap-1.5 cursor-pointer">
-          <input type="radio" name="fuenteTabla" value="google" [(ngModel)]="fuenteTabla" /> Google Drive
-        </label>
-      </div>
-
-      @if (fuenteTabla === 'archivo') {
-        <div class="flex items-center gap-2">
-          <input #tablaFile type="file" accept=".xlsx,.xls" (change)="onTablaFileSelected($event)" class="flex-1 text-xs" />
-          <button type="button" (click)="importarTabla(); tablaFile.value = ''" [disabled]="!nuevaTablaTitulo.trim() || !tablaFileSeleccionado || importandoTabla"
-            class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            {{ importandoTabla ? 'Importando...' : 'Importar tabla' }}
-          </button>
-        </div>
-      } @else {
-        <div class="flex items-center gap-2">
-          <input [(ngModel)]="tablaUrlDrive" placeholder="Pega aquí el enlace de Google Sheets o Drive" class="input-field flex-1" />
-          <button type="button" (click)="importarTablaDesdeUrl()" [disabled]="!nuevaTablaTitulo.trim() || !tablaUrlDrive.trim() || importandoTabla"
-            class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            {{ importandoTabla ? 'Cargando...' : 'Cargar datos' }}
-          </button>
-        </div>
-        <p class="text-[11px] text-slate-400">El archivo debe ser público o estar compartido como "Cualquiera con el enlace".</p>
-      }
-
-      @if (errorTabla) { <p class="text-xs text-red-500">{{errorTabla}}</p> }
-      @if (exitoTabla) { <p class="text-xs text-green-600">{{exitoTabla}}</p> }
-    </div>
-
-    <!-- Lista -->
-    <div class="space-y-2">
-      @for (t of tablas; track t._id) {
-        <div class="flex items-center gap-3 border border-slate-200 dark:border-slate-700 rounded-xl p-3">
-          <svg class="w-5 h-5 text-primary shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">{{t.titulo}}</p>
-            <p class="text-xs text-slate-400">{{ t.filas?.length || 0 }} filas</p>
-          </div>
-          <button type="button" (click)="eliminarRecurso(t, 'tabla')" class="text-slate-300 hover:text-red-500 transition shrink-0">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
-          </button>
-        </div>
-      }
-      @if (!tablas.length) { <p class="text-sm text-slate-400 italic text-center py-6">Sin tablas — importa una arriba.</p> }
-    </div>
-  </div>
-
-  <!-- GRÁFICOS -->
-  <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden p-6 space-y-4">
-    <div class="flex items-center justify-between">
-      <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Gráficos ({{graficos.length}})</h3>
-    </div>
-    <p class="text-xs text-slate-500 dark:text-slate-400">Sube un archivo Excel (.xlsx) o importa desde Google Sheets/Drive con 2 columnas: <strong>Curso</strong> y <strong>Total</strong> — se genera un gráfico de barras automáticamente.</p>
+    <p class="text-xs text-slate-500 dark:text-slate-400">Sube un Excel (.xlsx) con <strong>2 hojas</strong> o importa desde un enlace de Google Sheets/Drive con 2 hojas: la primera con la tabla de puntajes (las filas con color de fondo se resaltan como encabezado) y la segunda con 2 columnas (<strong>Curso</strong> y <strong>Total</strong>) para el gráfico. Ambos se crean juntos como una sola sección.</p>
 
     <!-- Form de importación -->
     <div class="border border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-4 space-y-3">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título</label>
-          <input [(ngModel)]="nuevoGraficoTitulo" placeholder="Ej: Boscómetro Básica Elemental" class="input-field" />
+          <input [(ngModel)]="nuevaSeccionTitulo" placeholder="Ej: Boscómetro Básica Elemental" class="input-field" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Subtítulo (opcional)</label>
-          <input [(ngModel)]="nuevoGraficoSubtitulo" placeholder="Ej: Boscómetro Preparatoria - Elemental 2025 - 2026" class="input-field" />
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Subtítulo del gráfico (opcional)</label>
+          <input [(ngModel)]="nuevaSeccionSubtitulo" placeholder="Ej: Boscómetro Preparatoria - Elemental 2025 - 2026" class="input-field" />
         </div>
       </div>
 
       <div class="flex items-center gap-4 text-xs font-medium text-slate-600 dark:text-slate-400">
         <label class="flex items-center gap-1.5 cursor-pointer">
-          <input type="radio" name="fuenteGrafico" value="archivo" [(ngModel)]="fuenteGrafico" /> Archivo Excel
+          <input type="radio" name="fuenteSeccion" value="archivo" [(ngModel)]="fuenteSeccion" /> Archivo Excel
         </label>
         <label class="flex items-center gap-1.5 cursor-pointer">
-          <input type="radio" name="fuenteGrafico" value="google" [(ngModel)]="fuenteGrafico" /> Google Drive
+          <input type="radio" name="fuenteSeccion" value="google" [(ngModel)]="fuenteSeccion" /> Google Drive
         </label>
       </div>
 
-      @if (fuenteGrafico === 'archivo') {
+      @if (fuenteSeccion === 'archivo') {
         <div class="flex items-center gap-2">
-          <input #graficoFile type="file" accept=".xlsx,.xls" (change)="onGraficoFileSelected($event)" class="flex-1 text-xs" />
-          <button type="button" (click)="importarGrafico(); graficoFile.value = ''" [disabled]="!nuevoGraficoTitulo.trim() || !graficoFileSeleccionado || importandoGrafico"
+          <input #seccionFile type="file" accept=".xlsx,.xls" (change)="onSeccionFileSelected($event)" class="flex-1 text-xs" />
+          <button type="button" (click)="importarSeccion(); seccionFile.value = ''" [disabled]="!nuevaSeccionTitulo.trim() || !seccionFileSeleccionado || importandoSeccion"
             class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            {{ importandoGrafico ? 'Importando...' : 'Importar gráfico' }}
+            {{ importandoSeccion ? 'Importando...' : 'Importar sección' }}
           </button>
         </div>
       } @else {
         <div class="flex items-center gap-2">
-          <input [(ngModel)]="graficoUrlDrive" placeholder="Pega aquí el enlace de Google Sheets o Drive" class="input-field flex-1" />
-          <button type="button" (click)="importarGraficoDesdeUrl()" [disabled]="!nuevoGraficoTitulo.trim() || !graficoUrlDrive.trim() || importandoGrafico"
+          <input [(ngModel)]="seccionUrlDrive" placeholder="Pega aquí el enlace de Google Sheets o Drive" class="input-field flex-1" />
+          <button type="button" (click)="importarSeccionDesdeUrl()" [disabled]="!nuevaSeccionTitulo.trim() || !seccionUrlDrive.trim() || importandoSeccion"
             class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition disabled:opacity-50">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            {{ importandoGrafico ? 'Cargando...' : 'Cargar datos' }}
+            {{ importandoSeccion ? 'Cargando...' : 'Cargar datos' }}
           </button>
         </div>
         <p class="text-[11px] text-slate-400">El archivo debe ser público o estar compartido como "Cualquiera con el enlace".</p>
       }
 
-      @if (errorGrafico) { <p class="text-xs text-red-500">{{errorGrafico}}</p> }
-      @if (exitoGrafico) { <p class="text-xs text-green-600">{{exitoGrafico}}</p> }
+      @if (errorSeccion) { <p class="text-xs text-red-500">{{errorSeccion}}</p> }
+      @if (exitoSeccion) { <p class="text-xs text-green-600">{{exitoSeccion}}</p> }
     </div>
 
     <!-- Lista -->
     <div class="space-y-2">
-      @for (g of graficos; track g._id) {
+      @for (s of secciones; track s.key) {
         <div class="flex items-center gap-3 border border-slate-200 dark:border-slate-700 rounded-xl p-3">
-          <svg class="w-5 h-5 text-primary shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <svg class="w-5 h-5 text-primary shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">{{g.titulo}}</p>
-            <p class="text-xs text-slate-400 truncate">{{ g.descripcion || 'Sin subtítulo' }} · {{ g.datos?.length || 0 }} puntos</p>
+            <p class="text-sm font-semibold text-slate-800 dark:text-white truncate">{{ s.tabla?.titulo || s.grafico?.titulo }}</p>
+            <p class="text-xs text-slate-400">{{ s.tabla?.filas?.length || 0 }} filas · {{ s.grafico?.datos?.length || 0 }} puntos</p>
           </div>
-          <button type="button" (click)="eliminarRecurso(g, 'grafico')" class="text-slate-300 hover:text-red-500 transition shrink-0">
+          <button type="button" (click)="eliminarSeccion(s)" class="text-slate-300 hover:text-red-500 transition shrink-0">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
           </button>
         </div>
       }
-      @if (!graficos.length) { <p class="text-sm text-slate-400 italic text-center py-6">Sin gráficos — importa uno arriba.</p> }
+      @if (!secciones.length) { <p class="text-sm text-slate-400 italic text-center py-6">Sin secciones — importa una arriba.</p> }
     </div>
   </div>
 </div>
@@ -179,29 +121,19 @@ export class Boscometro implements OnInit {
   guardado = false;
   guardandoConfig = false;
 
-  tablas: RecursoApi[] = [];
-  graficos: RecursoApi[] = [];
+  secciones: SeccionBoscometro[] = [];
 
-  nuevaTablaTitulo = '';
-  fuenteTabla: 'archivo' | 'google' = 'archivo';
-  tablaFileSeleccionado: File | null = null;
-  tablaUrlDrive = '';
-  importandoTabla = false;
-  errorTabla = '';
-  exitoTabla = '';
-
-  nuevoGraficoTitulo = '';
-  nuevoGraficoSubtitulo = '';
-  fuenteGrafico: 'archivo' | 'google' = 'archivo';
-  graficoFileSeleccionado: File | null = null;
-  graficoUrlDrive = '';
-  importandoGrafico = false;
-  errorGrafico = '';
-  exitoGrafico = '';
+  nuevaSeccionTitulo = '';
+  nuevaSeccionSubtitulo = '';
+  fuenteSeccion: 'archivo' | 'google' = 'archivo';
+  seccionFileSeleccionado: File | null = null;
+  seccionUrlDrive = '';
+  importandoSeccion = false;
+  errorSeccion = '';
+  exitoSeccion = '';
 
   private timer: ReturnType<typeof setTimeout> | null = null;
-  private timerTabla: ReturnType<typeof setTimeout> | null = null;
-  private timerGrafico: ReturnType<typeof setTimeout> | null = null;
+  private timerSeccion: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private recursos: RecursosApiService,
@@ -216,9 +148,22 @@ export class Boscometro implements OnInit {
 
   private cargarRecursos(): void {
     this.recursos.listByTipo(TIPO_TABLA, TIPO_GRAFICO).subscribe(list => {
-      this.tablas = list.filter(r => r.tipo === TIPO_TABLA);
-      this.graficos = list.filter(r => r.tipo === TIPO_GRAFICO);
+      this.secciones = this.construirSecciones(list);
     });
+  }
+
+  /** Agrupa tablas y gráficos por `seccionId`; los recursos legacy sin seccionId
+   * (o con solo tabla o solo gráfico) se muestran igual, cada uno como su propia sección. */
+  private construirSecciones(list: RecursoApi[]): SeccionBoscometro[] {
+    const map = new Map<string, SeccionBoscometro>();
+    for (const r of list) {
+      const key = r.seccionId || r._id;
+      const s = map.get(key) || { key, orden: r.orden };
+      if (r.tipo === TIPO_TABLA) s.tabla = r; else if (r.tipo === TIPO_GRAFICO) s.grafico = r;
+      s.orden = Math.min(s.orden, r.orden);
+      map.set(key, s);
+    }
+    return [...map.values()].sort((a, b) => a.orden - b.orden);
   }
 
   onChangeConfig(): void { this.guardado = false; }
@@ -236,107 +181,64 @@ export class Boscometro implements OnInit {
     });
   }
 
-  onTablaFileSelected(event: Event): void {
+  onSeccionFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.tablaFileSeleccionado = input.files?.[0] ?? null;
+    this.seccionFileSeleccionado = input.files?.[0] ?? null;
   }
 
-  onGraficoFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.graficoFileSeleccionado = input.files?.[0] ?? null;
-  }
-
-  importarTabla(): void {
-    if (!this.tablaFileSeleccionado || !this.nuevaTablaTitulo.trim()) return;
-    this.errorTabla = '';
-    this.importandoTabla = true;
-    this.recursos.importarTablaBoscometro(this.nuevaTablaTitulo.trim(), this.tablaFileSeleccionado).subscribe({
+  importarSeccion(): void {
+    if (!this.seccionFileSeleccionado || !this.nuevaSeccionTitulo.trim()) return;
+    this.errorSeccion = '';
+    this.importandoSeccion = true;
+    this.recursos.importarSeccionBoscometro(this.nuevaSeccionTitulo.trim(), this.nuevaSeccionSubtitulo.trim(), this.seccionFileSeleccionado).subscribe({
       next: () => {
-        this.importandoTabla = false;
-        this.nuevaTablaTitulo = '';
-        this.tablaFileSeleccionado = null;
-        this.mostrarExitoTabla();
+        this.importandoSeccion = false;
+        this.nuevaSeccionTitulo = '';
+        this.nuevaSeccionSubtitulo = '';
+        this.seccionFileSeleccionado = null;
+        this.mostrarExitoSeccion();
         this.cargarRecursos();
       },
       error: (err) => {
-        this.importandoTabla = false;
-        this.errorTabla = err?.error?.detail || 'No se pudo importar el archivo. Verifica que sea un Excel válido.';
+        this.importandoSeccion = false;
+        this.errorSeccion = err?.error?.detail || 'No se pudo importar el archivo. Verifica que tenga 2 hojas: tabla y gráfico.';
       },
     });
   }
 
-  importarTablaDesdeUrl(): void {
-    if (!this.tablaUrlDrive.trim() || !this.nuevaTablaTitulo.trim()) return;
-    this.errorTabla = '';
-    this.importandoTabla = true;
-    this.recursos.importarTablaBoscometroDesdeUrl(this.nuevaTablaTitulo.trim(), this.tablaUrlDrive.trim()).subscribe({
+  importarSeccionDesdeUrl(): void {
+    if (!this.seccionUrlDrive.trim() || !this.nuevaSeccionTitulo.trim()) return;
+    this.errorSeccion = '';
+    this.importandoSeccion = true;
+    this.recursos.importarSeccionBoscometroDesdeUrl(this.nuevaSeccionTitulo.trim(), this.nuevaSeccionSubtitulo.trim(), this.seccionUrlDrive.trim()).subscribe({
       next: () => {
-        this.importandoTabla = false;
-        this.nuevaTablaTitulo = '';
-        this.tablaUrlDrive = '';
-        this.mostrarExitoTabla();
+        this.importandoSeccion = false;
+        this.nuevaSeccionTitulo = '';
+        this.nuevaSeccionSubtitulo = '';
+        this.seccionUrlDrive = '';
+        this.mostrarExitoSeccion();
         this.cargarRecursos();
       },
       error: (err) => {
-        this.importandoTabla = false;
-        this.errorTabla = err?.error?.detail || 'No se pudo cargar el archivo desde Google Drive.';
+        this.importandoSeccion = false;
+        this.errorSeccion = err?.error?.detail || 'No se pudo cargar el archivo desde Google Drive.';
       },
     });
   }
 
-  importarGrafico(): void {
-    if (!this.graficoFileSeleccionado || !this.nuevoGraficoTitulo.trim()) return;
-    this.errorGrafico = '';
-    this.importandoGrafico = true;
-    this.recursos.importarGraficoBoscometro(this.nuevoGraficoTitulo.trim(), this.nuevoGraficoSubtitulo.trim(), this.graficoFileSeleccionado).subscribe({
-      next: () => {
-        this.importandoGrafico = false;
-        this.nuevoGraficoTitulo = '';
-        this.nuevoGraficoSubtitulo = '';
-        this.graficoFileSeleccionado = null;
-        this.mostrarExitoGrafico();
-        this.cargarRecursos();
-      },
-      error: (err) => {
-        this.importandoGrafico = false;
-        this.errorGrafico = err?.error?.detail || 'No se pudo importar el archivo. Verifica que tenga 2 columnas: curso y total.';
-      },
-    });
+  private mostrarExitoSeccion(): void {
+    this.exitoSeccion = 'Datos cargados correctamente.';
+    if (this.timerSeccion) clearTimeout(this.timerSeccion);
+    this.timerSeccion = setTimeout(() => this.exitoSeccion = '', 4000);
   }
 
-  importarGraficoDesdeUrl(): void {
-    if (!this.graficoUrlDrive.trim() || !this.nuevoGraficoTitulo.trim()) return;
-    this.errorGrafico = '';
-    this.importandoGrafico = true;
-    this.recursos.importarGraficoBoscometroDesdeUrl(this.nuevoGraficoTitulo.trim(), this.nuevoGraficoSubtitulo.trim(), this.graficoUrlDrive.trim()).subscribe({
-      next: () => {
-        this.importandoGrafico = false;
-        this.nuevoGraficoTitulo = '';
-        this.nuevoGraficoSubtitulo = '';
-        this.graficoUrlDrive = '';
-        this.mostrarExitoGrafico();
-        this.cargarRecursos();
-      },
-      error: (err) => {
-        this.importandoGrafico = false;
-        this.errorGrafico = err?.error?.detail || 'No se pudo cargar el archivo desde Google Drive.';
-      },
-    });
-  }
-
-  private mostrarExitoTabla(): void {
-    this.exitoTabla = 'Datos cargados correctamente.';
-    if (this.timerTabla) clearTimeout(this.timerTabla);
-    this.timerTabla = setTimeout(() => this.exitoTabla = '', 4000);
-  }
-
-  private mostrarExitoGrafico(): void {
-    this.exitoGrafico = 'Datos cargados correctamente.';
-    if (this.timerGrafico) clearTimeout(this.timerGrafico);
-    this.timerGrafico = setTimeout(() => this.exitoGrafico = '', 4000);
-  }
-
-  eliminarRecurso(r: RecursoApi, tipo: 'tabla' | 'grafico'): void {
-    this.recursos.delete(r._id).subscribe({ next: () => this.cargarRecursos() });
+  eliminarSeccion(s: SeccionBoscometro): void {
+    const ids = [s.tabla?._id, s.grafico?._id].filter((id): id is string => !!id);
+    if (!ids.length) return;
+    let restantes = ids.length;
+    ids.forEach(id => this.recursos.delete(id).subscribe({
+      next: () => { if (--restantes === 0) this.cargarRecursos(); },
+      error: () => { if (--restantes === 0) this.cargarRecursos(); },
+    }));
   }
 }
