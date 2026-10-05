@@ -122,7 +122,7 @@ import { environment } from '../../../environments/environment';
                     @if (uploadingCursos.has(curso.id)) {
                     <div class="flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500">
                       <svg class="w-6 h-6 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                      <span class="text-xs">Subiendo...</span>
+                      <span class="text-xs">Cargando imagen...</span>
                     </div>
                     } @else if (curso.image) {
                     <img [src]="curso.image" [alt]="curso.name" class="w-full h-full object-cover hover:opacity-75 transition" />
@@ -493,6 +493,7 @@ export class PromocioneManagerComponent implements OnInit {
   }
 
   procesarArchivo(file: File, curso: any): void {
+    if (this.uploadingCursos.has(curso.id)) return;
     if (!file.type.startsWith('image/')) {
       alert('Por favor selecciona una imagen (JPG, PNG, etc)');
       return;

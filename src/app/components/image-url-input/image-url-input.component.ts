@@ -28,24 +28,41 @@ import { environment } from '../../../environments/environment';
             <img [src]="value" [alt]="alt" [class]="imageClass" />
             <div class="absolute top-2 right-2 flex gap-1.5">
               <button type="button" (click)="openFilePicker()" [disabled]="disabled || uploading"
-                class="px-2 py-1 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 text-[10px] font-semibold rounded-lg hover:bg-white dark:hover:bg-slate-700 transition shadow">
-                {{ uploading ? 'Subiendo...' : 'Cambiar' }}
+                class="px-2 py-1 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 text-[10px] font-semibold rounded-lg hover:bg-white dark:hover:bg-slate-700 transition shadow disabled:opacity-50">
+                Cambiar
               </button>
-              <button type="button" (click)="clear()"
-                class="px-2 py-1 bg-red-500/90 text-white text-[10px] font-semibold rounded-lg hover:bg-red-600 transition shadow">
+              <button type="button" (click)="clear()" [disabled]="uploading"
+                class="px-2 py-1 bg-red-500/90 text-white text-[10px] font-semibold rounded-lg hover:bg-red-600 transition shadow disabled:opacity-50">
                 Quitar
               </button>
             </div>
+            @if (uploading) {
+              <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55 text-white backdrop-blur-sm">
+                <svg class="w-7 h-7 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="9" class="opacity-25"/>
+                  <path d="M21 12a9 9 0 0 0-9-9" stroke-linecap="round"/>
+                </svg>
+                <span class="text-xs font-semibold">Cargando imagen...</span>
+              </div>
+            }
           </div>
         } @else {
           <button type="button" (click)="openFilePicker()" [disabled]="disabled || uploading"
             [class]="emptyClass">
-            <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
-            </svg>
-            <span class="text-sm">{{ uploading ? 'Subiendo...' : 'Subir imagen o pegar URL' }}</span>
+            @if (uploading) {
+              <svg class="w-7 h-7 animate-spin text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="9" class="opacity-25"/>
+                <path d="M21 12a9 9 0 0 0-9-9" stroke-linecap="round"/>
+              </svg>
+              <span class="text-sm font-semibold text-primary">Cargando imagen...</span>
+            } @else {
+              <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <span class="text-sm">Subir imagen o pegar URL</span>
+            }
           </button>
         }
       }
@@ -64,7 +81,7 @@ import { environment } from '../../../environments/environment';
             <polyline points="17 8 12 3 7 8"/>
             <line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
-          Subir
+          {{ uploading ? 'Cargando...' : 'Subir' }}
         </button>
       </div>
 
@@ -127,7 +144,7 @@ export class ImageUrlInputComponent implements ControlValueAccessor {
   }
 
   openFilePicker(): void {
-    if (this.disabled) return;
+    if (this.disabled || this.uploading) return;
     this.fileInput?.nativeElement.click();
   }
 
@@ -146,7 +163,7 @@ export class ImageUrlInputComponent implements ControlValueAccessor {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (!file) return;
+    if (!file || this.uploading) return;
 
     if (!file.type.startsWith('image/')) {
       this.error = 'Selecciona una imagen JPG, PNG o WebP.';

@@ -94,7 +94,7 @@ export class Dashboard implements OnInit, OnDestroy {
     this.heroMediaError = null;
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (!file) return;
+    if (!file || this.heroUploading) return;
 
     if (file.type.startsWith('video/')) {
       this.heroMediaError = 'Los videos no pueden subirse como archivo. Usa una URL externa (YouTube embed, CDN, etc.) pegándola en el campo de texto.';

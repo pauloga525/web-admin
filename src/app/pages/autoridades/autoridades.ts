@@ -18,6 +18,7 @@ export class Autoridades implements OnInit {
   seleccionada: Autoridad | null = null;
   guardado = false;
   esNueva = false;
+  eliminando = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private svc: AutoridadesService) {}
@@ -67,10 +68,22 @@ export class Autoridades implements OnInit {
   }
 
   eliminar(id: string): void {
-    if (!confirm('¿Eliminar esta autoridad?')) return;
+    if (this.eliminando || !id) return;
+    const nombre = this.seleccionada?.name || 'esta autoridad';
+    if (!confirm(`¿Eliminar a ${nombre}? Esta acción no se puede deshacer.`)) return;
+    this.eliminando = true;
     this.svc.eliminar(id).subscribe({
-      next: () => { if (this.seleccionada?._id === id) this.seleccionada = null; },
-      error: err => console.error('Error al eliminar autoridad:', err),
+      next: () => {
+        this.eliminando = false;
+        if (this.seleccionada?._id === id) this.seleccionada = null;
+      },
+      error: err => {
+        this.eliminando = false;
+        console.error('Error al eliminar autoridad:', err);
+        alert(err?.status === 403
+          ? 'No tienes permisos para eliminar autoridades (se requiere rol admin).'
+          : 'No se pudo eliminar la autoridad. Inténtalo de nuevo.');
+      },
     });
   }
 
