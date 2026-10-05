@@ -12,6 +12,15 @@ export interface FooterQuickLink  { id: number; label: string; href: string; }
 export interface FooterBottomLink { id: number; label: string; href: string; }
 export interface FooterRedSocial  { id: number; icon: string; href: string; label: string; }
 
+/** Sede mostrada en el carrusel de "Ubicación" del footer público. */
+export interface FooterSede {
+  id:         number;
+  nombre:     string;
+  direccion:  string;
+  mapaImagen: string;
+  mapaUrl:    string;
+}
+
 export interface SiteFooterConfig {
   logoUrl:     string;
   logoAlt:     string;
@@ -26,6 +35,8 @@ export interface SiteFooterConfig {
   email:          string;
   mapaImagen:  string;
   mapaUrl:     string;
+  /** Sedes adicionales. Si hay al menos una, el footer muestra un carrusel con ellas. */
+  sedes:       FooterSede[];
   copyright:   string;
   footerLinks: FooterBottomLink[];
 }
@@ -61,6 +72,7 @@ const DEFAULT: SiteFooterConfig = {
   email:      'info@uets.edu.ec',
   mapaImagen: '',
   mapaUrl:    'https://maps.google.com',
+  sedes:      [],
   copyright:  `© ${new Date().getFullYear()} Unidad Educativa. Todos los derechos reservados.`,
   footerLinks: [
     { id: 1, label: 'Política de privacidad', href: '' },
@@ -99,6 +111,7 @@ export class SiteFooterService {
       map(c => ({
         ...DEFAULT,
         ...c,
+        sedes:       Array.isArray(c.sedes) ? c.sedes : [],
         redes:       Array.isArray(c.redes)       && c.redes.length       ? c.redes       : DEFAULT.redes,
         quickLinks:  Array.isArray(c.quickLinks)  && c.quickLinks.length  ? c.quickLinks  : DEFAULT.quickLinks,
         footerLinks: Array.isArray(c.footerLinks) && c.footerLinks.length ? c.footerLinks : DEFAULT.footerLinks,
