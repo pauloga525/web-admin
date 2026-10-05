@@ -104,6 +104,52 @@ type Tab = 'marca' | 'contacto' | 'enlaces' | 'pie';
           <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL "Ver en mapa"</label>
             <input [(ngModel)]="config.mapaUrl" (ngModelChange)="onChange()" placeholder="https://maps.google.com/..." class="input-field" /></div>
         </div>
+
+        <hr class="border-slate-100 dark:border-slate-800" />
+
+        <!-- SEDES (carrusel) -->
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sedes (carrusel de ubicación)</h3>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+              Si agregas al menos una sede, la columna "Ubicación" del footer se convierte en un carrusel con todas ellas.
+              Si no hay sedes, se muestra el mapa único de arriba.
+            </p>
+          </div>
+          <button type="button" (click)="agregarSede()" class="text-xs text-primary hover:underline flex items-center gap-1 shrink-0">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Agregar sede
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          @for (s of config.sedes; track trackById($index, s); let i = $index) {
+          <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3 bg-slate-50/50 dark:bg-slate-800/30">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-bold text-slate-600 dark:text-slate-300">Sede {{ i + 1 }}{{ s.nombre ? ' — ' + s.nombre : '' }}</p>
+              <button type="button" (click)="eliminarSede(s.id)" class="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 transition">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg> Eliminar
+              </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nombre de la sede</label>
+                <input [(ngModel)]="s.nombre" (ngModelChange)="onChange()" placeholder="Ej: Campus Yanuncay" class="input-field text-sm" /></div>
+              <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Dirección</label>
+                <input [(ngModel)]="s.direccion" (ngModelChange)="onChange()" placeholder="Ej: Av. Don Bosco y Felipe II, Cuenca" class="input-field text-sm" /></div>
+              <app-image-url-input
+                label="Imagen del mapa"
+                [(ngModel)]="s.mapaImagen"
+                (ngModelChange)="onChange()"
+                placeholder="https://..."
+                previewHeight="h-28"
+                alt="Mapa de la sede" />
+              <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">URL "Ver en mapa"</label>
+                <input [(ngModel)]="s.mapaUrl" (ngModelChange)="onChange()" placeholder="https://maps.google.com/..." class="input-field text-sm" /></div>
+            </div>
+          </div>
+          } @empty {
+            <p class="text-sm text-slate-400 dark:text-slate-500 italic py-3 text-center">Sin sedes — usa "Agregar sede" para crear el carrusel.</p>
+          }
+        </div>
       </div>
       }
 
@@ -198,6 +244,7 @@ export class FooterEditor implements OnInit {
   constructor(private svc: SiteFooterService) {}
   ngOnInit(): void {
     this.config = this.svc.getCopia();
+    if (!Array.isArray(this.config.sedes)) this.config.sedes = [];
     this.svc.cargarDesdeBackend().subscribe(cfg => { this.config = cfg; });
   }
   onChange(): void { this.guardado = false; }
@@ -213,6 +260,16 @@ export class FooterEditor implements OnInit {
 
   agregarRed(): void { this.config.redes.push({ id: this.svc.nextId(), icon: 'public', label: '', href: '#' }); this.onChange(); }
   eliminarRed(id: number): void { this.config.redes = this.config.redes.filter(r => r.id !== id); this.onChange(); }
+
+  agregarSede(): void {
+    this.config.sedes.push({ id: this.svc.nextId(), nombre: '', direccion: '', mapaImagen: '', mapaUrl: '' });
+    this.onChange();
+  }
+  eliminarSede(id: number): void {
+    if (!confirm('¿Eliminar esta sede del carrusel?')) return;
+    this.config.sedes = this.config.sedes.filter(s => s.id !== id);
+    this.onChange();
+  }
 
   agregarQuickLink(): void { this.config.quickLinks.push({ id: this.svc.nextId(), label: '', href: '#' }); this.onChange(); }
   eliminarQuickLink(id: number): void { this.config.quickLinks = this.config.quickLinks.filter(l => l.id !== id); this.onChange(); }
