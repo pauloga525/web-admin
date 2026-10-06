@@ -304,11 +304,24 @@ export interface HomeEventos {
   urlBotonVerMas: string;
 }
 
+export type RedSocialTipo =
+  | 'facebook' | 'instagram' | 'twitter' | 'youtube'
+  | 'tiktok' | 'spotify' | 'linkedin' | 'web';
+
+/** Enlace a una red social de un logo de comunidad. */
+export interface HomeLogoRed {
+  id: number;
+  tipo: RedSocialTipo;
+  url: string;
+}
+
 /** Logo de comunidad/aliado. */
 export interface HomeLogo {
   id: number;
   url: string;
   nombre: string;
+  /** Redes sociales del logo (pueden ser varias). */
+  redes?: HomeLogoRed[];
 }
 
 /** Característica del modelo educativo. */
