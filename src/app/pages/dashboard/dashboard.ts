@@ -21,7 +21,7 @@ import { environment } from '../../../environments/environment';
 import {
   Actividad, GrupoActividad,
   HomeConfig, HomeBoton, HomePorQueItem, HomeNivel,
-  HomeLogo, HomeCaracteristica, HomeEnlace, HomeFooterColumna,
+  HomeLogo, HomeLogoRed, RedSocialTipo, HomeCaracteristica, HomeEnlace, HomeFooterColumna,
 } from '../../models';
 
 interface SeccionNav { id: string; label: string; }
@@ -276,7 +276,39 @@ export class Dashboard implements OnInit, OnDestroy {
 
   // ── Logos ──────────────────────────────────────────────────────────────────
   agregarLogo(): void {
-    this.home.logos.push({ id: this.homeService.nextId(), url: '', nombre: '' });
+    this.home.logos.push({ id: this.homeService.nextId(), url: '', nombre: '', redes: [] });
+    this.onCambioHome();
+  }
+
+  readonly redesTipos: { value: RedSocialTipo; label: string }[] = [
+    { value: 'facebook',  label: 'Facebook' },
+    { value: 'instagram', label: 'Instagram' },
+    { value: 'twitter',   label: 'X (Twitter)' },
+    { value: 'youtube',   label: 'YouTube' },
+    { value: 'tiktok',    label: 'TikTok' },
+    { value: 'spotify',   label: 'Spotify' },
+    { value: 'linkedin',  label: 'LinkedIn' },
+    { value: 'web',       label: 'Sitio web' },
+  ];
+
+  agregarRedLogo(logo: HomeLogo): void {
+    (logo.redes ??= []).push({ id: Date.now() + Math.floor(Math.random() * 1000), tipo: 'facebook', url: '' });
+    this.onCambioHome();
+  }
+  eliminarRedLogo(logo: HomeLogo, id: number): void {
+    logo.redes = (logo.redes ?? []).filter(r => r.id !== id);
+    this.onCambioHome();
+  }
+  /** Al pegar una URL, sugiere el tipo de red según el dominio. */
+  detectarRed(red: HomeLogoRed): void {
+    const u = red.url.toLowerCase();
+    const map: [string, RedSocialTipo][] = [
+      ['facebook.com', 'facebook'], ['fb.com', 'facebook'], ['instagram.com', 'instagram'],
+      ['x.com', 'twitter'], ['twitter.com', 'twitter'], ['youtube.com', 'youtube'], ['youtu.be', 'youtube'],
+      ['tiktok.com', 'tiktok'], ['spotify.com', 'spotify'], ['linkedin.com', 'linkedin'],
+    ];
+    const hit = map.find(([d]) => u.includes(d));
+    if (hit) red.tipo = hit[1];
     this.onCambioHome();
   }
   eliminarLogo(id: number): void {
