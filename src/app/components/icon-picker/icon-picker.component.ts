@@ -29,7 +29,7 @@ export const DEFAULT_ICON_OPTIONS: string[] = [
         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">{{ label }}</label>
       }
 
-      <button type="button" (click)="toggle()" [disabled]="disabled"
+      <button #trigger type="button" (click)="toggle(trigger)" [disabled]="disabled"
         class="w-full flex items-center gap-2 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50">
         <span class="material-symbols-outlined text-lg text-primary shrink-0">{{ value || 'help_outline' }}</span>
         <span class="flex-1 text-left truncate text-xs">{{ value || 'Elegir ícono...' }}</span>
@@ -37,7 +37,8 @@ export const DEFAULT_ICON_OPTIONS: string[] = [
       </button>
 
       @if (open) {
-        <div class="absolute z-30 mt-1 w-64 max-h-56 overflow-y-auto p-2 grid grid-cols-5 gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg">
+        <div [style.top.px]="popTop" [style.left.px]="popLeft"
+          class="fixed z-[1000] w-64 max-h-56 overflow-y-auto p-2 grid grid-cols-5 gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg">
           @for (icon of icons; track icon) {
             <button type="button" (click)="select(icon)" [title]="icon"
               class="flex items-center justify-center h-10 rounded-lg transition-colors"
@@ -84,9 +85,29 @@ export class IconPickerComponent implements ControlValueAccessor {
     this.disabled = isDisabled;
   }
 
-  toggle(): void {
+  popTop = 0;
+  popLeft = 0;
+
+  toggle(trigger?: HTMLElement): void {
     if (this.disabled) return;
     this.open = !this.open;
+    if (this.open && trigger) this.position(trigger);
+  }
+
+  /** Posiciona el panel con coordenadas de viewport para que no lo recorte ningún contenedor con overflow. */
+  private position(trigger: HTMLElement): void {
+    const r = trigger.getBoundingClientRect();
+    const panelW = 256;
+    const panelH = 224;
+    const below = window.innerHeight - r.bottom;
+    this.popTop = below >= panelH + 8 || r.top < panelH ? r.bottom + 4 : r.top - panelH - 4;
+    this.popLeft = Math.max(8, Math.min(r.left, window.innerWidth - panelW - 8));
+  }
+
+  @HostListener('window:scroll')
+  @HostListener('window:resize')
+  onViewportChange(): void {
+    this.open = false;
   }
 
   select(icon: string): void {
