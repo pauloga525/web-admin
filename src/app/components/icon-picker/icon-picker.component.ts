@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, forwardRef, HostListener, Input } from '@angular/core';
+import { Component, ElementRef, forwardRef, HostListener, Input, ViewChild } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 /** Íconos curados (nombres de Material Symbols/Icons) para uso general en el panel. */
@@ -37,8 +37,8 @@ export const DEFAULT_ICON_OPTIONS: string[] = [
       </button>
 
       @if (open) {
-        <div [style.top.px]="popTop" [style.left.px]="popLeft"
-          class="fixed z-[1000] w-64 max-h-56 overflow-y-auto p-2 grid grid-cols-5 gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg">
+        <div #panel [style.top.px]="popTop" [style.left.px]="popLeft"
+          class="fixed z-[1000] w-72 max-h-[300px] overflow-y-auto p-2 grid grid-cols-5 gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg">
           @for (icon of icons; track icon) {
             <button type="button" (click)="select(icon)" [title]="icon"
               class="flex items-center justify-center h-10 rounded-lg transition-colors"
@@ -85,6 +85,16 @@ export class IconPickerComponent implements ControlValueAccessor {
     this.disabled = isDisabled;
   }
 
+  private panelEl?: HTMLElement;
+
+  /** Mueve el panel a <body> para que ningún ancestro con transform/overflow altere su posición fixed. */
+  @ViewChild('panel') set panel(ref: ElementRef<HTMLElement> | undefined) {
+    this.panelEl = ref?.nativeElement;
+    if (this.panelEl && this.panelEl.parentNode !== document.body) {
+      document.body.appendChild(this.panelEl);
+    }
+  }
+
   popTop = 0;
   popLeft = 0;
 
@@ -97,11 +107,17 @@ export class IconPickerComponent implements ControlValueAccessor {
   /** Posiciona el panel con coordenadas de viewport para que no lo recorte ningún contenedor con overflow. */
   private position(trigger: HTMLElement): void {
     const r = trigger.getBoundingClientRect();
-    const panelW = 256;
-    const panelH = 224;
-    const below = window.innerHeight - r.bottom;
-    this.popTop = below >= panelH + 8 || r.top < panelH ? r.bottom + 4 : r.top - panelH - 4;
-    this.popLeft = Math.max(8, Math.min(r.left, window.innerWidth - panelW - 8));
+    const margin = 12;
+    const panelW = 288;
+    const panelH = Math.min(300, window.innerHeight - margin * 2);
+    const below = window.innerHeight - r.bottom - margin;
+    const above = r.top - margin;
+    let top: number;
+    if (below >= panelH) top = r.bottom + 4;
+    else if (above >= panelH) top = r.top - panelH - 4;
+    else top = (window.innerHeight - panelH) / 2; // sin espacio: centrado verticalmente en pantalla
+    this.popTop = Math.max(margin, Math.min(top, window.innerHeight - panelH - margin));
+    this.popLeft = Math.max(margin, Math.min(r.left, window.innerWidth - panelW - margin));
   }
 
   @HostListener('window:scroll')
@@ -119,7 +135,8 @@ export class IconPickerComponent implements ControlValueAccessor {
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    if (this.open && !this.elementRef.nativeElement.contains(event.target as Node)) {
+    const target = event.target as Node;
+    if (this.open && !this.elementRef.nativeElement.contains(target) && !this.panelEl?.contains(target)) {
       this.open = false;
     }
   }
