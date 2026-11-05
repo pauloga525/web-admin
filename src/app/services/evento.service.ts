@@ -131,12 +131,6 @@ export class EventoService {
     );
   }
 
-  setDestacado(id: string): Observable<void> {
-    return this.http.patch<void>(`${this.apiUrl}/${id}/destacado`, {}).pipe(
-      tap(() => this.cargarTodos()),
-    );
-  }
-
   togglePublicado(id: string): Observable<Evento> {
     return this.http.patch<Evento>(`${this.apiUrl}/${id}/toggle-publicado`, {}).pipe(
       tap(() => this.cargarTodos()),

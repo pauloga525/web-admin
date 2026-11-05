@@ -71,6 +71,10 @@
           <label class="label">Dirección</label>
           <input [(ngModel)]="evento.direccion" (ngModelChange)="onCambio()" placeholder="Ej: Av. Principal s/n" class="input" />
         </div>
+        <div class="md:col-span-2">
+          <label class="label">Información importante (opcional)</label>
+          <textarea [(ngModel)]="evento.infoImportante" (ngModelChange)="onCambio()" rows="3" placeholder="Aviso que se muestra en la página del evento. Vacío = se oculta." class="input"></textarea>
+        </div>
 
         <div class="md:col-span-2">
           <label class="label">Descripción corta</label>
@@ -234,17 +238,6 @@
           </span>
         </label>
 
-        <label class="flex items-center gap-3 cursor-pointer">
-          <div class="relative">
-            <input type="checkbox" [(ngModel)]="evento.destacado" (ngModelChange)="onCambio()" class="sr-only peer" />
-            <div class="w-10 h-6 bg-slate-200 dark:bg-slate-700 rounded-full peer-checked:bg-amber-400 transition-colors"></div>
-            <div class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
-          </div>
-          <span class="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-amber-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            Evento destacado
-          </span>
-        </label>
       </div>
 
       <!-- RESUMEN -->
@@ -318,11 +311,6 @@
           }
           <p class="text-white font-bold text-sm leading-tight drop-shadow">{{evento.titulo}}</p>
         </div>
-        @if (evento.destacado) {
-          <div class="absolute top-2 right-2">
-            <svg class="w-5 h-5 text-amber-400 drop-shadow" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-          </div>
-        }
       </div>
       <div class="p-4 space-y-2 text-xs text-slate-500 dark:text-slate-400">
         @if (evento.fecha) {

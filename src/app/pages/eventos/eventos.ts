@@ -9,7 +9,6 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { EventoService } from '../../services/evento.service';
-import { ActivityService } from '../../services/activity';
 import { Evento, CategoriaEvento, HeroEventos, CreateEventoDto } from '../../models/api.models';
 import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
 
@@ -86,7 +85,6 @@ export class Eventos implements OnInit, OnDestroy {
 
   constructor(
     private eventoService:   EventoService,
-    private activityService: ActivityService,
     public  router:          Router,
   ) {}
 
@@ -138,18 +136,14 @@ export class Eventos implements OnInit, OnDestroy {
 
     if (this.editandoId !== null) {
       // Actualización — el objeto ya tiene _id
-      this.eventoService.actualizar(this.form as Evento).subscribe(() => {
-        this.activityService.agregarActividad('evento', 'Evento actualizado', `Se editó "${titulo}".`);
-      });
+      this.eventoService.actualizar(this.form as Evento).subscribe();
     } else {
       // Creación
       const dto: CreateEventoDto = {
         ...(this.form as CreateEventoDto),
         slug: this.eventoService.generarSlug(titulo!),
       };
-      this.eventoService.agregar(dto).subscribe(() => {
-        this.activityService.agregarActividad('evento', 'Evento creado', `Se creó "${titulo}".`);
-      });
+      this.eventoService.agregar(dto).subscribe();
     }
     this.cerrarModalEvento();
   }
@@ -159,14 +153,6 @@ export class Eventos implements OnInit, OnDestroy {
   togglePublicado(ev: Evento, e: Event): void {
     e.stopPropagation();
     this.eventoService.togglePublicado(ev._id).subscribe();
-  }
-
-  setDestacado(ev: Evento, e: Event): void {
-    e.stopPropagation();
-    this.eventoService.setDestacado(ev._id).subscribe(() => {
-      this.activityService.agregarActividad('evento', 'Evento destacado', `"${ev.titulo}" marcado como destacado.`);
-    });
-    this.menuAbierto = null;
   }
 
   // ─── Eliminar evento ──────────────────────────────────────────────────────
@@ -179,9 +165,7 @@ export class Eventos implements OnInit, OnDestroy {
 
   confirmarEliminarEvento(): void {
     if (!this.eventoEliminar) return;
-    this.eventoService.eliminar(this.eventoEliminar._id).subscribe(() => {
-      this.activityService.agregarActividad('evento', 'Evento eliminado', `Se eliminó "${this.eventoEliminar!.titulo}".`);
-    });
+    this.eventoService.eliminar(this.eventoEliminar._id).subscribe();
     this.eventoEliminar    = null;
     this.confirmarEliminar = false;
   }
@@ -222,7 +206,6 @@ export class Eventos implements OnInit, OnDestroy {
 
   guardarHero(): void {
     this.eventoService.actualizarHero(this.hero);
-    this.activityService.agregarActividad('evento', 'Hero actualizado', 'Se actualizó la configuración del hero de eventos.');
   }
 
   // ─── Menú contextual — usa _id (string) ──────────────────────────────────

@@ -8,7 +8,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule, Location } from '@angular/common';
 import { EventoService } from '../../../services/evento.service';
-import { ActivityService } from '../../../services/activity';
 import { Evento, Tab, AgendaItem, CategoriaEvento } from '../../../models/api.models';
 import { Subscription } from 'rxjs';
 import { ImageUrlInputComponent } from '../../../components/image-url-input/image-url-input.component';
@@ -44,7 +43,6 @@ export class EventoEditor implements OnInit, OnDestroy {
     private location:       Location,
     private router:         Router,
     private eventoService:  EventoService,
-    private activityService:ActivityService,
   ) {}
 
   ngOnInit(): void {
@@ -88,7 +86,6 @@ export class EventoEditor implements OnInit, OnDestroy {
     this.evento.slug = this.eventoService.generarSlug(this.evento.titulo);
 
     this.eventoService.actualizar(this.evento).subscribe(() => {
-      this.activityService.agregarActividad('evento', 'Evento actualizado', `Se guardaron los cambios de "${this.evento!.titulo}".`);
       this.guardado = true;
     });
   }
@@ -99,7 +96,6 @@ export class EventoEditor implements OnInit, OnDestroy {
   confirmarEliminarEvento(): void {
     if (!this.evento) return;
     this.eventoService.eliminar(this.evento._id).subscribe(() => {
-      this.activityService.agregarActividad('evento', 'Evento eliminado', `Se eliminó "${this.evento!.titulo}".`);
       this.router.navigate(['/eventos']);
     });
   }

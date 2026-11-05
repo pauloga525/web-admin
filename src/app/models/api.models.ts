@@ -145,6 +145,7 @@ export interface Evento extends MongoDocument {
   horaFin: string;
   ubicacion: string;
   direccion?: string;
+  infoImportante?: string;
   imagenPrincipal: string;
   galeria?: string[];
   agenda?: AgendaItem[];

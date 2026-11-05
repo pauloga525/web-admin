@@ -1,86 +1,97 @@
 /**
  * @file activity.ts
- * @description Servicio para registrar y consultar el historial de actividad del sistema.
- * Persiste los datos en localStorage y expone métodos de consulta y agrupación.
+ * @description Historial de actividad del panel. Los registros los genera el backend
+ * automáticamente con cada cambio (crear, editar, eliminar); este servicio solo los
+ * consulta y los mantiene actualizados.
  */
 
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, interval } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { Actividad, GrupoActividad, TipoActividad } from '../models';
+import { AuthService } from './auth.service';
 
-const STORAGE_KEY = 'actividades';
+interface ActividadApi {
+  _id: string;
+  tipo: TipoActividad;
+  titulo?: string;
+  descripcion: string;
+  usuario?: string;
+  createdAt: string;
+}
+
+const REFRESCO_MS = 20000;
+
+/** El backend guarda UTC sin sufijo de zona; sin "Z" el navegador lo leería como hora local. */
+function aFecha(iso: string): Date {
+  return new Date(/Z$|[+-]\d{2}:?\d{2}$/i.test(iso) ? iso : iso + 'Z');
+}
 
 @Injectable({ providedIn: 'root' })
 export class ActivityService {
-
+  private readonly url = `${environment.apiUrl}/actividad`;
   private actividades: Actividad[] = [];
+  private readonly subject = new BehaviorSubject<Actividad[]>([]);
 
-  constructor() {
-    this.actividades = this.cargar();
-    this.ordenar();
+  /** Emite cada vez que cambia el historial. */
+  actividades$ = this.subject.asObservable();
+
+  constructor(private http: HttpClient, private auth: AuthService) {
+    this.recargar();
+    interval(REFRESCO_MS).subscribe(() => this.recargar());
+    window.addEventListener('focus', () => this.recargar());
   }
 
-  // ─── Persistencia ───────────────────────────────────────────────────────────
+  // ─── Carga ──────────────────────────────────────────────────────────────────
 
-  /** Carga actividades desde localStorage, restituyendo objetos Date. */
-  private cargar(): Actividad[] {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw).map((a: Actividad) => ({
-      ...a,
-      fecha: new Date(a.fecha),
-    }));
-  }
-
-  /** Persiste el array actual en localStorage. */
-  private guardar(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.actividades));
-  }
-
-  /** Ordena las actividades de más reciente a más antigua. */
-  private ordenar(): void {
-    this.actividades.sort(
-      (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
-    );
+  /** Vuelve a pedir el historial al backend (solo con sesión activa). */
+  recargar(): void {
+    if (!this.auth.isAuthenticated()) return;
+    this.http.get<ActividadApi[]>(this.url).subscribe({
+      next: lista => {
+        this.actividades = lista.map(a => ({
+          _id: a._id,
+          tipo: a.tipo,
+          titulo: a.titulo || 'Actividad',
+          descripcion: a.descripcion,
+          usuario: a.usuario,
+          fecha: aFecha(a.createdAt),
+        }));
+        this.actividades.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+        this.subject.next(this.actividades);
+      },
+      error: () => {},
+    });
   }
 
   // ─── Consultas ──────────────────────────────────────────────────────────────
 
-  /** Retorna todas las actividades ordenadas. */
   getActividades(): Actividad[] {
     return this.actividades;
   }
 
-  /** Retorna el total de actividades. */
   getTotalActividades(): number {
     return this.actividades.length;
   }
 
   /** Retorna las N actividades más recientes (por defecto 6). */
   getActividadesRecientes(n = 6): Actividad[] {
-    this.ordenar();
     return this.actividades.slice(0, n);
   }
 
-  /**
-   * Agrupa las actividades por proximidad de fecha.
-   * @returns Array de grupos con etiqueta (Hoy, Ayer, Hace N días) e items.
-   */
+  /** Agrupa las actividades por día calendario (Hoy, Ayer, Hace N días). */
   getActividadesAgrupadas(): GrupoActividad[] {
     const grupos: Record<string, { orden: number; items: Actividad[] }> = {};
-    const hoy = new Date();
+    const inicioHoy = new Date();
+    inicioHoy.setHours(0, 0, 0, 0);
 
     for (const a of this.actividades) {
-      const diff = Math.floor(
-        (hoy.getTime() - new Date(a.fecha).getTime()) / 86400000
-      );
-
+      const dia = new Date(a.fecha);
+      dia.setHours(0, 0, 0, 0);
+      const diff = Math.max(0, Math.round((inicioHoy.getTime() - dia.getTime()) / 86400000));
       const titulo = diff === 0 ? 'Hoy' : diff === 1 ? 'Ayer' : `Hace ${diff} días`;
-      const orden  = diff;
-
-      if (!grupos[titulo]) {
-        grupos[titulo] = { orden, items: [] };
-      }
-      grupos[titulo].items.push(a);
+      (grupos[titulo] ??= { orden: diff, items: [] }).items.push(a);
     }
 
     return Object.entries(grupos)
@@ -88,65 +99,41 @@ export class ActivityService {
       .map(([titulo, { items }]) => ({ titulo, items }));
   }
 
-  /**
-   * Indica si una actividad fue registrada hace menos de 5 minutos.
-   * Útil para mostrar badges de "nuevo".
-   */
+  /** Actividad registrada hace menos de 5 minutos (badge "nuevo"). */
   isNuevaActividad(a: Actividad): boolean {
-    const minutos = (Date.now() - new Date(a.fecha).getTime()) / 60000;
-    return minutos <= 5;
+    return (Date.now() - new Date(a.fecha).getTime()) / 60000 <= 5;
   }
 
   // ─── Mutaciones ─────────────────────────────────────────────────────────────
 
-  /**
-   * Registra una nueva actividad al inicio del historial.
-   */
-  agregarActividad(tipo: TipoActividad, titulo: string, descripcion: string): void {
-    this.actividades.unshift({ tipo, titulo, descripcion, fecha: new Date() });
-    this.guardar();
-  }
-
-  /**
-   * Elimina una actividad por referencia de objeto.
-   */
   eliminarActividad(a: Actividad): void {
-    const idx = this.actividades.indexOf(a);
-    if (idx !== -1) {
-      this.actividades.splice(idx, 1);
-      this.guardar();
-    }
+    if (!a._id) return;
+    this.http.delete(`${this.url}/${a._id}`).subscribe({
+      next: () => {
+        this.actividades = this.actividades.filter(x => x._id !== a._id);
+        this.subject.next(this.actividades);
+      },
+      error: () => {},
+    });
   }
 
-  /**
-   * Elimina automáticamente las actividades con más de 30 días de antigüedad.
-   * @returns Número de registros eliminados.
-   */
+  /** El backend purga el historial de más de 30 días al consultarlo; se mantiene por compatibilidad. */
   limpiarAntiguos(): number {
-    const limite = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const antes  = this.actividades.length;
-    this.actividades = this.actividades.filter(
-      a => new Date(a.fecha).getTime() >= limite
-    );
-    const eliminados = antes - this.actividades.length;
-    if (eliminados > 0) this.guardar();
-    return eliminados;
+    return 0;
   }
 
   // ─── Utilidades ─────────────────────────────────────────────────────────────
 
-  /**
-   * Convierte una fecha en texto relativo legible.
-   * @example "Hace 5 min", "Hace 2 h", "Hace 3 días"
-   */
+  /** @example "Ahora", "Hace 5 min", "Hace 2 h", "Hace 3 días" */
   getTiempoRelativo(fecha: Date): string {
     const diff = Date.now() - new Date(fecha).getTime();
-    const min  = Math.floor(diff / 60000);
+    const min  = Math.max(0, Math.floor(diff / 60000));
     const h    = Math.floor(diff / 3600000);
     const d    = Math.floor(diff / 86400000);
 
-    if (min < 60)  return `Hace ${min} min`;
-    if (h   < 24)  return `Hace ${h} h`;
+    if (min < 1)  return 'Ahora';
+    if (min < 60) return `Hace ${min} min`;
+    if (h   < 24) return `Hace ${h} h`;
     return `Hace ${d} día${d > 1 ? 's' : ''}`;
   }
 }

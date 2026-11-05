@@ -223,7 +223,7 @@ class="text-slate-800 dark:text-white font-medium">
     <!-- LISTA DE NOTIFICACIONES -->
     <div class="max-h-[420px] overflow-y-auto custom-scroll" @listaNotificaciones>
 
-      @for (n of notificaciones; track n) {
+      @for (n of notificaciones; track n.id) {
 
       <div
       @eliminarNotif

@@ -143,6 +143,8 @@ export type TipoActividad =
 
 /** Representa una entrada en el historial de actividad. */
 export interface Actividad {
+  _id?: string;
+  usuario?: string;
   tipo: TipoActividad;
   titulo: string;
   descripcion: string;
@@ -159,7 +161,7 @@ export interface GrupoActividad {
 
 /** Representa una notificación del sistema. */
 export interface Notificacion {
-  id: number;
+  id: string;
   titulo: string;
   descripcion: string;
   fecha: Date;
