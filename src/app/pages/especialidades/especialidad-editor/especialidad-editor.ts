@@ -10,7 +10,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule, Location } from '@angular/common';
 import { EspecialidadService } from '../../../services/especialidad.service';
-import { ActivityService } from '../../../services/activity';
 import { IconService } from '../../../services/icon.service';
 import { SafeUrlPipe } from '../../../pipes/safe-url.pipe';
 import { ImageUrlInputComponent } from '../../../components/image-url-input/image-url-input.component';
@@ -60,7 +59,6 @@ export class EspecialidadEditor implements OnInit {
     private location:            Location,
     private router:              Router,
     private especialidadService: EspecialidadService,
-    private activityService:     ActivityService,
     public  iconService:         IconService,
   ) {}
 
@@ -186,10 +184,6 @@ export class EspecialidadEditor implements OnInit {
       this.especialidad.videoUrl = this.toEmbedUrl(this.especialidad.videoUrl);
     }
     this.especialidadService.actualizar(this.especialidad).subscribe(() => {
-      this.activityService.agregarActividad(
-        'especialidad', 'Especialidad actualizada',
-        `Se guardaron los cambios de "${this.especialidad!.titulo}".`
-      );
       this.guardado = true;
     });
   }
@@ -200,10 +194,6 @@ export class EspecialidadEditor implements OnInit {
   confirmarEliminarEspecialidad(): void {
     if (!this.especialidad) return;
     this.especialidadService.eliminar(this.especialidad._id).subscribe(() => {
-      this.activityService.agregarActividad(
-        'especialidad', 'Especialidad eliminada',
-        `Se eliminó la especialidad "${this.especialidad!.titulo}".`
-      );
       this.router.navigate(['/especialidades']);
     });
   }

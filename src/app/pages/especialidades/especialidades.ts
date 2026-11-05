@@ -9,7 +9,6 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { EspecialidadService } from '../../services/especialidad.service';
-import { ActivityService } from '../../services/activity';
 import { IconService } from '../../services/icon.service';
 import { ConfiguracionApiService } from '../../services/configuracion-api.service';
 import { Especialidad, CreateEspecialidadDto } from '../../models/api.models';
@@ -86,7 +85,6 @@ export class Especialidades implements OnInit, OnDestroy {
   constructor(
     public  iconService:    IconService,
     private especialidadService: EspecialidadService,
-    private activityService:     ActivityService,
     private configApi:           ConfiguracionApiService,
     public  router:              Router,
     private cdr:                 ChangeDetectorRef,
@@ -178,7 +176,6 @@ export class Especialidades implements OnInit, OnDestroy {
         next: () => {
           this.cerrarModal();
           this.cdr.detectChanges();
-          try { this.activityService.agregarActividad('especialidad', 'Especialidad actualizada', `Se editó "${titulo}".`); } catch {}
           this.especialidadService.cargarTodas();
         },
         error: (err) => {
@@ -202,7 +199,6 @@ export class Especialidades implements OnInit, OnDestroy {
           this.mostrarExito = true;
           if (this.exitoTimer) clearTimeout(this.exitoTimer);
           this.exitoTimer = setTimeout(() => { this.mostrarExito = false; this.cdr.detectChanges(); }, 3000);
-          try { this.activityService.agregarActividad('especialidad', 'Especialidad creada', `Se creó "${titulo}".`); } catch {}
           this.especialidadService.cargarTodas();
         },
         error: (err) => {
@@ -234,7 +230,6 @@ export class Especialidades implements OnInit, OnDestroy {
 
     this.especialidadService.eliminar(_id).subscribe({
       next: () => {
-        try { this.activityService.agregarActividad('especialidad', 'Especialidad eliminada', `Se eliminó "${titulo}".`); } catch {}
         this.especialidadService.cargarTodas();
       },
       error: () => {
