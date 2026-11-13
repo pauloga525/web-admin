@@ -1,10 +1,10 @@
 <div class="p-8 space-y-8 max-w-7xl mx-auto w-full">
 
-<!-- EDITOR HOME + ACTIVIDAD -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- EDITOR HOME -->
+<div class="grid grid-cols-1 gap-6">
 
-  <!-- EDITOR HOME (2/3) -->
-  <div class="lg:col-span-2 space-y-0">
+  <!-- EDITOR HOME -->
+  <div class="space-y-0">
 
     <!-- HEADER -->
     <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-t-xl px-6 py-4 flex items-center justify-between">
@@ -370,6 +370,11 @@
               <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Descripción</label>
               <textarea [(ngModel)]="home.institucional.descripcion" (ngModelChange)="onCambioHome()" rows="3" class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"></textarea>
             </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Enlace del botón "Conocer más sobre nuestro modelo"</label>
+              <input [(ngModel)]="home.institucional.botonUrl" (ngModelChange)="onCambioHome()" placeholder="https://... o /nosotros" class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">Una dirección externa (https://...) se abre en otra pestaña; una ruta del sitio (/nosotros) se abre en la misma. Si lo dejas vacío, el botón no se muestra.</p>
+            </div>
           </div>
           <div>
             <div class="flex items-center justify-between mb-2">
@@ -554,68 +559,6 @@
       }
 
     </div><!-- /PANEL EDICIÓN -->
-  </div><!-- /lg:col-span-2 -->
-
-  <!-- ACTIVIDAD RECIENTE (1/3) -->
-  <div class="lg:col-span-1">
-    <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-xl p-6 h-full">
-      <div class="flex items-center justify-between mb-5">
-        <h2 class="font-bold text-sm text-slate-800 dark:text-slate-100">Actividad Reciente</h2>
-        <a routerLink="/actividad" class="text-xs text-primary hover:underline">Ver todo</a>
-      </div>
-      <div class="space-y-6">
-        @for (grupo of getActividadesAgrupadas(); track grupo.titulo) {
-        <div>
-          <p class="text-[11px] font-bold uppercase text-slate-400 dark:text-slate-500 mb-3">{{grupo.titulo}}</p>
-          @for (a of grupo.items; track $index; let last = $last) {
-          <div class="flex gap-3 mb-4 opacity-0 animate-[fadeIn_.4s_ease_forwards]">
-            <div class="relative flex flex-col items-center">
-              <div class="size-8 rounded-full flex items-center justify-center relative z-10"
-                [ngClass]="{
-                  'bg-blue-500/10 text-blue-500':    a.tipo === 'usuario',
-                  'bg-orange-500/10 text-orange-500': a.tipo === 'evento',
-                  'bg-green-500/10 text-green-500':   a.tipo === 'reporte',
-                  'bg-purple-500/10 text-purple-500': a.tipo === 'especialidad',
-                  'bg-slate-100 dark:bg-slate-800 text-slate-400': a.tipo === 'sistema' || a.tipo === 'curso' || a.tipo === 'estudiante'
-                }">
-                @if (isNuevaActividad(a)) {
-                  <div class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                }
-                @if (a.tipo === 'usuario') {
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21c0-3-4-5-8-5s-8 2-8 5"/></svg>
-                }
-                @if (a.tipo === 'evento') {
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>
-                }
-                @if (a.tipo === 'reporte') {
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-                }
-                @if (a.tipo === 'especialidad') {
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9 3h6v3H9z"/><path d="M9 10l1.5 1.5L13 9"/><path d="M9 14l1.5 1.5L13 13"/></svg>
-                }
-                @if (a.tipo === 'sistema' || a.tipo === 'curso' || a.tipo === 'estudiante') {
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                }
-              </div>
-              @if (!last) {
-                <div class="w-px flex-1 bg-slate-100 dark:bg-slate-800 mt-1"></div>
-              }
-            </div>
-            <div class="flex flex-col pb-1">
-              <p class="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-snug">{{a.titulo}}</p>
-              <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">{{a.descripcion}}</p>
-              <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{{activityService.getTiempoRelativo(a.fecha)}}</p>
-            </div>
-          </div>
-          }
-        </div>
-        }
-        @if (!getActividadesAgrupadas().length) {
-          <p class="text-sm text-slate-400 dark:text-slate-500 italic text-center py-8">Sin actividad reciente.</p>
-        }
-      </div>
-    </div>
-  </div><!-- /lg:col-span-1 -->
-
+  </div><!-- /editor home -->
 </div><!-- /grid -->
 </div><!-- /outer wrapper -->

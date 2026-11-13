@@ -10,7 +10,6 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { Subscription, lastValueFrom } from 'rxjs';
 
-import { ActivityService } from '../../services/activity';
 import { HomeService }     from '../../services/home.service';
 import { EventoService }   from '../../services/evento.service';
 import { KpiService, KpiCard } from '../../services/kpi.service';
@@ -19,7 +18,6 @@ import { IconPickerComponent } from '../../components/icon-picker/icon-picker.co
 import { environment } from '../../../environments/environment';
 
 import {
-  Actividad, GrupoActividad,
   HomeConfig, HomeBoton, HomePorQueItem, HomeNivel,
   HomeLogo, HomeLogoRed, RedSocialTipo, HomeCaracteristica, HomeEnlace, HomeFooterColumna,
 } from '../../models';
@@ -40,9 +38,6 @@ export class Dashboard implements OnInit, OnDestroy {
   editandoKpi: KpiCard | null = null;
   guardadoKpis = false;
   private kpiTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // ─── Actividad reciente ────────────────────────────────────────────────────
-  actividades: Actividad[] = [];
 
   // ─── Home editor ──────────────────────────────────────────────────────────
   home!: HomeConfig;
@@ -66,7 +61,6 @@ export class Dashboard implements OnInit, OnDestroy {
   heroUploading = false;
 
   constructor(
-    public activityService: ActivityService,
     private homeService: HomeService,
     private eventoService: EventoService,
     private kpiService: KpiService,
@@ -145,7 +139,6 @@ export class Dashboard implements OnInit, OnDestroy {
         }
       })
     );
-    this.actividades = this.activityService.getActividadesRecientes();
 
     // Suscripción reactiva: actualiza this.home cuando llega la respuesta del backend
     // (evita mostrar datos vacíos mientras el HTTP GET termina)
@@ -180,26 +173,6 @@ export class Dashboard implements OnInit, OnDestroy {
     this.guardadoKpis = true;
     if (this.kpiTimer) clearTimeout(this.kpiTimer);
     this.kpiTimer = setTimeout(() => this.guardadoKpis = false, 3000);
-  }
-
-  // ─── Actividad ─────────────────────────────────────────────────────────────
-
-  /** Retorna grupos con máximo 6 actividades en total para el widget del dashboard. */
-  getActividadesAgrupadas(): GrupoActividad[] {
-    const grupos = this.activityService.getActividadesAgrupadas();
-    let restantes = 6;
-    const resultado: GrupoActividad[] = [];
-    for (const g of grupos) {
-      if (restantes <= 0) break;
-      const items = g.items.slice(0, restantes);
-      resultado.push({ titulo: g.titulo, items });
-      restantes -= items.length;
-    }
-    return resultado;
-  }
-
-  isNuevaActividad(a: Actividad): boolean {
-    return this.activityService.isNuevaActividad(a);
   }
 
   // ─── Home ──────────────────────────────────────────────────────────────────

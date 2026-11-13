@@ -33,6 +33,7 @@ import { Boscometro }          from './pages/boscometro/boscometro';
 import { Configuracion }       from './pages/configuracion/configuracion';
 import { Actividad }           from './pages/actividad/actividad';
 import { authGuard }           from './guards/auth.guard';
+import { adminGuard }          from './guards/admin.guard';
 
 export const routes: Routes = [
   { path: 'login', component: Login },
@@ -62,7 +63,13 @@ export const routes: Routes = [
   { path: 'repositorios',        canActivate: [authGuard], component: Repositorios,       data: { animation: 'Repositorios',        breadcrumb: 'Repositorios'          } },
   { path: 'boscometro',          canActivate: [authGuard], component: Boscometro,         data: { animation: 'Boscometro',          breadcrumb: 'Boscómetro'            } },
   { path: 'configuracion',       canActivate: [authGuard], component: Configuracion,      data: { animation: 'Configuracion',       breadcrumb: 'Configuración'         } },
-  { path: 'actividad',           canActivate: [authGuard], component: Actividad,          data: { animation: 'Actividad',           breadcrumb: 'Actividad reciente'    } },
+  { path: 'actividad',           canActivate: [authGuard, adminGuard], component: Actividad,          data: { animation: 'Actividad',           breadcrumb: 'Actividad reciente'    } },
+  {
+    path: 'informes',
+    canActivate: [authGuard, adminGuard],
+    loadComponent: () => import('./pages/informes/informes').then(m => m.Informes),
+    data: { animation: 'Informes', breadcrumb: 'Informes' }
+  },
   {
     path: 'notificaciones',
     canActivate: [authGuard],

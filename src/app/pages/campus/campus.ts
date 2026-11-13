@@ -199,17 +199,27 @@ type Tab = 'hero' | 'yanuncay' | 'crespi' | 'auxiliadora' | 'plataformas';
         </div>
         <div class="space-y-3">
           @for (p of plataformas; track trackById($index, p)) {
-          <div class="flex items-center gap-3 border border-slate-200 dark:border-slate-700 rounded-xl p-3">
-            <div class="w-12 h-10 rounded-lg shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-              @if (p.image) { <img [src]="p.image" [alt]="p.name" class="w-full h-full object-contain p-1" /> }
-              @else { <svg class="w-5 h-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> }
+          <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-3">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-10 rounded-lg shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                @if (p.image) { <img [src]="p.image" [alt]="p.name" class="w-full h-full object-contain p-1" /> }
+                @else { <svg class="w-5 h-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> }
+              </div>
+              <input [(ngModel)]="p.name" (ngModelChange)="onChange()" placeholder="Nombre" aria-label="Nombre de la plataforma" class="flex-1 min-w-0 input-field text-sm" />
+              <button type="button" (click)="eliminarPlataforma(p.id)" title="Eliminar plataforma" class="text-slate-300 hover:text-red-500 transition shrink-0">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </button>
             </div>
-            <input [(ngModel)]="p.name" (ngModelChange)="onChange()" placeholder="Nombre" class="w-28 input-field text-sm" />
-            <app-image-url-input class="flex-1 min-w-0" [(ngModel)]="p.image" (ngModelChange)="onChange()" placeholder="URL logo" [showPreview]="false" />
-            <input [(ngModel)]="p.url" (ngModelChange)="onChange()" placeholder="URL enlace" class="flex-1 input-field text-xs" />
-            <button type="button" (click)="eliminarPlataforma(p.id)" class="text-slate-300 hover:text-red-500 transition shrink-0">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            </button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="min-w-0">
+                <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Logo (URL o subir imagen)</label>
+                <app-image-url-input [(ngModel)]="p.image" (ngModelChange)="onChange()" placeholder="https://..." [showPreview]="false" />
+              </div>
+              <div class="min-w-0">
+                <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Enlace (a dónde lleva al hacer clic)</label>
+                <input [(ngModel)]="p.url" (ngModelChange)="onChange()" placeholder="https://..." type="url" class="input-field text-sm" />
+              </div>
+            </div>
           </div>
           }
         </div>

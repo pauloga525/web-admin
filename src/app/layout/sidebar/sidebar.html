@@ -336,6 +336,7 @@
         @if(!collapsed){<div class="flex flex-col whitespace-nowrap"><h1>Notificaciones</h1></div>}
       </a>
 
+      @if (esAdmin) {
       <a routerLink="/actividad" routerLinkActive="sidebar-item-active [&>svg]:text-white"
          class="sidebar-item group" data-tooltip="Actividad"
          (mouseenter)="showTooltip($event, 'Actividad')" (mouseleave)="hideTooltip()">
@@ -344,6 +345,17 @@
         </svg>
         @if(!collapsed){<div class="flex flex-col whitespace-nowrap"><h1>Actividad</h1></div>}
       </a>
+
+      <a routerLink="/informes" routerLinkActive="sidebar-item-active [&>svg]:text-white"
+         class="sidebar-item group" data-tooltip="Informes"
+         (mouseenter)="showTooltip($event, 'Informes')" (mouseleave)="hideTooltip()">
+        <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14 3v5h5M9 13h6M9 17h6M9 9h1"/>
+        </svg>
+        @if(!collapsed){<div class="flex flex-col whitespace-nowrap"><h1>Informes</h1></div>}
+      </a>
+      }
 
       <a routerLink="/configuracion" routerLinkActive="sidebar-item-active [&>svg]:text-white"
          class="sidebar-item group" data-tooltip="Configuración">

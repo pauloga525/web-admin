@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { UserService, UserProfile } from '../../services/user.service';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
+import { AuthService } from '../../services/auth.service';
+import { ROLES_ADMIN } from '../../guards/admin.guard';
 
 @Component({
   selector: 'app-sidebar',
@@ -22,10 +24,14 @@ export class Sidebar implements OnInit, OnDestroy {
   tooltipY       = 0;
   tooltipVisible = false;
 
-  constructor(public userService: UserService) {}
+  /** Solo los administradores ven la opción de Informes. */
+  esAdmin = false;
+
+  constructor(public userService: UserService, private auth: AuthService) {}
 
   ngOnInit(): void {
     this.sub.add(this.userService.profile$.subscribe(p => this.profile = p));
+    this.sub.add(this.auth.user$.subscribe(u => this.esAdmin = !!u && ROLES_ADMIN.includes(u.rol)));
   }
   ngOnDestroy(): void { this.sub.unsubscribe(); }
 

@@ -117,7 +117,7 @@ export class ActivityService {
     });
   }
 
-  /** El backend purga el historial de más de 30 días al consultarlo; se mantiene por compatibilidad. */
+  /** El backend purga el historial de más de 1 año al consultarlo; se mantiene por compatibilidad. */
   limpiarAntiguos(): number {
     return 0;
   }

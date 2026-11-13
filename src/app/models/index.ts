@@ -339,6 +339,8 @@ export interface HomeInstitucional {
   descripcion: string;
   imagen: string;
   caracteristicas: HomeCaracteristica[];
+  /** Enlace del botón "Conocer más sobre nuestro modelo" (ruta interna o URL externa). */
+  botonUrl?: string;
 }
 
 /** Enlace de comunicación o interés. */

@@ -2,7 +2,7 @@
  * @file actividad.ts
  * @description Página de historial de actividad del sistema.
  * Muestra todas las acciones registradas agrupadas por fecha.
- * Permite eliminar entradas individuales y purga automáticamente las de +30 días.
+ * Permite eliminar entradas individuales y purga automáticamente las de más de 1 año.
  */
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { RouterModule } from '@angular/router';
@@ -28,7 +28,7 @@ export class Actividad implements OnInit, OnDestroy {
   constructor(public activityService: ActivityService) {}
 
   ngOnInit(): void {
-    // Purga automática de actividades con más de 30 días
+    // Purga automática de actividades con más de 1 año
     this.purgados = this.activityService.limpiarAntiguos();
     this.refrescarTotal();
 
