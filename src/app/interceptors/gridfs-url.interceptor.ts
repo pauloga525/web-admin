@@ -8,6 +8,7 @@
  * Mongo. Si el backend cambia de host (dev → prod, cambio de dominio, etc.), esas
  * URLs quedan "congeladas" apuntando al host viejo. Este interceptor normaliza
  * cualquier `/api/v1/imagenes/gridfs/{id}` a `${environment.apiUrl}/imagenes/gridfs/{id}`
+ * (y lo mismo con `/api/v1/documentos/gridfs/{id}`: PDF/Word de Instructivos, Recursos, etc.)
  * sin importar qué endpoint la haya devuelto — antes esto solo se aplicaba a mano en
  * un par de servicios de configuración, dejando sin normalizar `/recursos`, `/logros`,
  * `/eventos`, etc.
@@ -16,13 +17,17 @@ import { HttpInterceptorFn, HttpResponse } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
-const GRIDFS_MARKER = '/api/v1/imagenes/gridfs/';
+// Imágenes y documentos se guardan en GridFS con la URL completa del host de ese momento.
+const GRIDFS_TIPOS = ['imagenes', 'documentos'] as const;
 
 function normalizeGridfsUrls<T>(value: T): T {
   if (typeof value === 'string') {
-    if (value.includes(GRIDFS_MARKER)) {
-      const id = value.split(GRIDFS_MARKER).pop();
-      return `${environment.apiUrl}/imagenes/gridfs/${id}` as unknown as T;
+    for (const tipo of GRIDFS_TIPOS) {
+      const marker = `/api/v1/${tipo}/gridfs/`;
+      if (value.includes(marker)) {
+        const id = value.split(marker).pop();
+        return `${environment.apiUrl}/${tipo}/gridfs/${id}` as unknown as T;
+      }
     }
     return value;
   }

@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SiteFooterService, SiteFooterConfig, FooterQuickLink, FooterBottomLink, FooterRedSocial } from '../../services/site-footer.service';
 import { ImageUrlInputComponent } from '../../components/image-url-input/image-url-input.component';
+import { PaginasLegalesService, PaginasLegales } from '../../services/paginas-legales.service';
 
-type Tab = 'marca' | 'contacto' | 'enlaces' | 'pie';
+type Tab = 'marca' | 'contacto' | 'enlaces' | 'pie' | 'legal';
 
 @Component({
   selector: 'app-footer-editor',
@@ -15,7 +16,7 @@ type Tab = 'marca' | 'contacto' | 'enlaces' | 'pie';
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-xl font-bold text-slate-800 dark:text-white">Footer del sitio</h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Logo, contacto, redes, enlaces rápidos y pie de página.</p>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Logo, contacto, redes, enlaces rápidos, pie de página y páginas legales.</p>
     </div>
     <button type="button" (click)="guardar()" [class]="guardado ? 'flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-green-500 text-white transition' : 'flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary/90 transition shadow-md shadow-primary/20'">
       @if (guardado) { <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Guardado
@@ -25,7 +26,7 @@ type Tab = 'marca' | 'contacto' | 'enlaces' | 'pie';
 
   <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
     <div class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-      <div class="flex">
+      <div class="flex overflow-x-auto">
         @for (t of tabs; track t.id) {
           <button type="button" (click)="tabActiva = t.id" [class]="tabActiva === t.id ? 'px-5 py-3 text-xs font-bold border-b-2 border-primary text-primary' : 'px-5 py-3 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 transition'">{{t.label}}</button>
         }
@@ -210,6 +211,56 @@ type Tab = 'marca' | 'contacto' | 'enlaces' | 'pie';
       </div>
       }
 
+
+      <!-- PÁGINAS LEGALES -->
+      @if (tabActiva === 'legal') {
+      <div class="space-y-5 animate-[fadeIn_.2s_ease_forwards]">
+        @if (!legal) {
+          <p class="text-sm text-slate-400 italic py-6 text-center">{{ errorLegal || 'Cargando…' }}</p>
+        } @else {
+        <div class="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-50 dark:bg-slate-800/50">
+          <button type="button" (click)="legalActiva = 'privacidad'"
+            [class]="legalActiva === 'privacidad' ? 'px-4 py-1.5 text-xs font-semibold rounded-md bg-white dark:bg-slate-900 text-primary shadow-sm' : 'px-4 py-1.5 text-xs font-semibold rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400'">
+            Política de privacidad
+          </button>
+          <button type="button" (click)="legalActiva = 'terminos'"
+            [class]="legalActiva === 'terminos' ? 'px-4 py-1.5 text-xs font-semibold rounded-md bg-white dark:bg-slate-900 text-primary shadow-sm' : 'px-4 py-1.5 text-xs font-semibold rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400'">
+            Términos de uso
+          </button>
+        </div>
+
+        <p class="text-[11px] text-slate-400 dark:text-slate-500">
+          Se publica en el sitio en <code class="text-slate-600 dark:text-slate-300">{{ legalActiva === 'privacidad' ? '/politica-privacidad' : '/terminos-de-uso' }}</code>
+          y se enlaza desde el pie de página.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_12rem] gap-4">
+          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Título</label>
+            <input [(ngModel)]="legal[legalActiva].titulo" (ngModelChange)="onChange()" class="input-field" /></div>
+          <div><label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Última actualización</label>
+            <input [(ngModel)]="legal[legalActiva].actualizado" (ngModelChange)="onChange()" type="date" class="input-field" /></div>
+        </div>
+
+        <div>
+          <div class="flex items-end justify-between mb-1">
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Contenido</label>
+            <button type="button" (click)="restaurarLegal()" class="text-xs text-slate-400 hover:text-red-500 transition">Restaurar texto original</button>
+          </div>
+          <textarea [(ngModel)]="legal[legalActiva].contenido" (ngModelChange)="onChange()" rows="22"
+            class="input-field text-sm leading-relaxed resize-y"></textarea>
+          <p class="mt-2 text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed">
+            Formato: una línea que empieza con <code class="text-slate-600 dark:text-slate-300">## </code> es un título de sección (aparece en el índice),
+            una que empieza con <code class="text-slate-600 dark:text-slate-300">- </code> es un punto de lista, y una línea en blanco separa párrafos.
+            Los correos se convierten en enlaces automáticamente.
+          </p>
+        </div>
+
+        <p class="text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+          El texto inicial es una plantilla general basada en la Ley Orgánica de Protección de Datos Personales del Ecuador. Conviene que el área legal de la institución lo revise antes de publicarlo como definitivo.
+        </p>
+        }
+      </div>
+      }
     </div>
   </div>
 </div>
@@ -227,6 +278,7 @@ export class FooterEditor implements OnInit {
     { id: 'contacto', label: 'Contacto'      },
     { id: 'enlaces',  label: 'Enlaces'       },
     { id: 'pie',      label: 'Pie'           },
+    { id: 'legal',    label: 'Páginas legales' },
   ];
 
   readonly redesOpciones: Record<string, string> = {
@@ -241,8 +293,16 @@ export class FooterEditor implements OnInit {
   readonly redesOpcionesList = Object.entries(this.redesOpciones)
     .map(([value, label]) => ({ value, label }));
 
-  constructor(private svc: SiteFooterService) {}
+  legal: PaginasLegales | null = null;
+  legalActiva: keyof PaginasLegales = 'privacidad';
+  errorLegal = '';
+
+  constructor(private svc: SiteFooterService, private legalSvc: PaginasLegalesService) {}
   ngOnInit(): void {
+    this.legalSvc.cargar().subscribe({
+      next: l => this.legal = l,
+      error: () => this.errorLegal = 'No se pudo cargar el texto de las páginas legales.',
+    });
     this.config = this.svc.getCopia();
     if (!Array.isArray(this.config.sedes)) this.config.sedes = [];
     this.svc.cargarDesdeBackend().subscribe(cfg => { this.config = cfg; });
@@ -251,9 +311,16 @@ export class FooterEditor implements OnInit {
 
   guardar(): void {
     this.svc.guardar(this.config).subscribe();
+    if (this.legal) this.legalSvc.guardar(this.legal).subscribe();
     this.guardado = true;
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => this.guardado = false, 3000);
+  }
+
+  restaurarLegal(): void {
+    if (!this.legal || !confirm('¿Reemplazar el título y el contenido por el texto original?')) return;
+    this.legal[this.legalActiva] = this.legalSvc.porDefecto(this.legalActiva);
+    this.onChange();
   }
 
   trackById(i: number, item: { id: number }): number { return item.id; }

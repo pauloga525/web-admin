@@ -75,8 +75,8 @@ const DEFAULT: SiteFooterConfig = {
   sedes:      [],
   copyright:  `© ${new Date().getFullYear()} Unidad Educativa. Todos los derechos reservados.`,
   footerLinks: [
-    { id: 1, label: 'Política de privacidad', href: '' },
-    { id: 2, label: 'Términos de uso',        href: '' },
+    { id: 1, label: 'Política de privacidad', href: '/politica-privacidad' },
+    { id: 2, label: 'Términos de uso',        href: '/terminos-de-uso'     },
   ],
 };
 
