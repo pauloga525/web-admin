@@ -41,6 +41,7 @@ export const routes: Routes = [
   { path: '',                    canActivate: [authGuard], component: Dashboard,          data: { animation: 'Dashboard',           breadcrumb: 'Panel Principal'       } },
   { path: 'header',              canActivate: [authGuard], component: HeaderEditor,       data: { animation: 'HeaderEditor',        breadcrumb: 'Header del sitio'      } },
   { path: 'footer',              canActivate: [authGuard], component: FooterEditor,       data: { animation: 'FooterEditor',        breadcrumb: 'Footer del sitio'      } },
+  { path: 'aviso-importante',    canActivate: [authGuard], loadComponent: () => import('./pages/aviso-importante/aviso-importante').then(m => m.AvisoImportante), data: { animation: 'AvisoImportante',     breadcrumb: 'Aviso importante'      } },
   { path: 'admisiones',          canActivate: [authGuard], component: Admisiones,         data: { animation: 'Admisiones',          breadcrumb: 'Admisiones'            } },
   { path: 'noticias',            canActivate: [authGuard], component: Noticias,           data: { animation: 'Noticias',            breadcrumb: 'Noticias'              } },
   { path: 'contacto',            canActivate: [authGuard], component: Contacto,           data: { animation: 'Contacto',            breadcrumb: 'Contacto'              } },
