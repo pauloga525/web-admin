@@ -40,6 +40,35 @@ import { ImageUrlInputComponent } from '../../components/image-url-input/image-u
     </div>
   </div>
 
+  <!-- FAVICON -->
+  <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
+    <div>
+      <h2 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Icono de la pestaña (favicon)</h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Es el icono pequeño que aparece en la pestaña del navegador y en los marcadores. Usa una imagen cuadrada (por ejemplo 512×512 px). Si lo dejas vacío, se usa el logo.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <app-image-url-input
+        label="Favicon"
+        [(ngModel)]="config.faviconUrl"
+        (ngModelChange)="onChange()"
+        placeholder="https://... o sube una imagen"
+        previewHeight="h-28"
+        fit="contain"
+        alt="Icono de la pestaña" />
+      <div>
+        <p class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Así se verá en la pestaña</p>
+        <div class="flex items-center gap-2 max-w-xs rounded-t-lg border border-b-0 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-3 py-2">
+          @if (config.faviconUrl || config.logoUrl) {
+            <img [src]="config.faviconUrl || config.logoUrl" alt="" class="w-4 h-4 object-contain shrink-0" />
+          } @else {
+            <span class="w-4 h-4 rounded-sm bg-slate-300 dark:bg-slate-600 shrink-0"></span>
+          }
+          <span class="text-xs text-slate-700 dark:text-slate-200 truncate">Unidad Educativa Técnico Salesiano</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- AULA VIRTUAL -->
   <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
     <h2 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Botón Aula Virtual</h2>

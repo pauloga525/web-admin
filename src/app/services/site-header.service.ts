@@ -19,6 +19,8 @@ export interface NavItem {
 export interface SiteHeaderConfig {
   logoUrl:          string;
   logoAlt:          string;
+  /** Icono de la pestaña del navegador. Vacío = se usa el logo. */
+  faviconUrl?:      string;
   aulaVirtualUrl:   string;
   aulaVirtualLabel: string;
   navItems:         NavItem[];
@@ -29,6 +31,7 @@ const KEY = 'edu_site_header';
 const DEFAULT: SiteHeaderConfig = {
   logoUrl:          '',
   logoAlt:          'Logo Unidad Educativa Ecuador',
+  faviconUrl:       '',
   aulaVirtualUrl:   'https://edu.esemtia.com/LoginEsemtia.aspx',
   aulaVirtualLabel: 'Aula Virtual',
   navItems: [
