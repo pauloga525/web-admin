@@ -23,6 +23,9 @@ export interface SiteHeaderConfig {
   faviconUrl?:      string;
   aulaVirtualUrl:   string;
   aulaVirtualLabel: string;
+  /** Botón "Plataforma" (sistemas internos). Vacío = no se muestra en la web. */
+  plataformaUrl?:   string;
+  plataformaLabel?: string;
   navItems:         NavItem[];
 }
 
@@ -34,6 +37,8 @@ const DEFAULT: SiteHeaderConfig = {
   faviconUrl:       '',
   aulaVirtualUrl:   'https://edu.esemtia.com/LoginEsemtia.aspx',
   aulaVirtualLabel: 'Aula Virtual',
+  plataformaUrl:    '',
+  plataformaLabel:  'Plataforma',
   navItems: [
     { label: 'Inicio',   routerLink: '/',         hasDropdown: false, submenu: [] },
     { label: 'Nosotros', routerLink: '/nosotros', hasDropdown: false, submenu: [] },

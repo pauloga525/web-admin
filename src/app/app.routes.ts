@@ -7,7 +7,6 @@ import { Routes } from '@angular/router';
 
 import { Login }               from './pages/login/login';
 import { Dashboard }           from './pages/dashboard/dashboard';
-import { HeaderEditor }        from './pages/header-editor/header-editor';
 import { FooterEditor }        from './pages/footer-editor/footer-editor';
 import { Admisiones }          from './pages/admisiones/admisiones';
 import { Noticias }            from './pages/noticias/noticias';
@@ -39,7 +38,7 @@ export const routes: Routes = [
   { path: 'login', component: Login },
 
   { path: '',                    canActivate: [authGuard], component: Dashboard,          data: { animation: 'Dashboard',           breadcrumb: 'Panel Principal'       } },
-  { path: 'header',              canActivate: [authGuard], component: HeaderEditor,       data: { animation: 'HeaderEditor',        breadcrumb: 'Header del sitio'      } },
+  { path: 'header',              canActivate: [authGuard], loadComponent: () => import('./pages/header-editor/header-editor').then(m => m.HeaderEditor), data: { animation: 'HeaderEditor',        breadcrumb: 'Header del sitio'      } },
   { path: 'footer',              canActivate: [authGuard], component: FooterEditor,       data: { animation: 'FooterEditor',        breadcrumb: 'Footer del sitio'      } },
   { path: 'aviso-importante',    canActivate: [authGuard], loadComponent: () => import('./pages/aviso-importante/aviso-importante').then(m => m.AvisoImportante), data: { animation: 'AvisoImportante',     breadcrumb: 'Aviso importante'      } },
   { path: 'admisiones',          canActivate: [authGuard], component: Admisiones,         data: { animation: 'Admisiones',          breadcrumb: 'Admisiones'            } },

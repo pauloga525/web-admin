@@ -84,6 +84,27 @@ import { ImageUrlInputComponent } from '../../components/image-url-input/image-u
     </div>
   </div>
 
+  <!-- PLATAFORMA -->
+  <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
+    <div>
+      <h2 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Botón Plataforma</h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Aparece junto al botón de Aula Virtual. Lleva a los sistemas internos (planificación curricular, solicitudes, tutorías). Si dejas el enlace vacío, el botón no se muestra.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label for="plataforma-label" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Texto del botón</label>
+        <input id="plataforma-label" [(ngModel)]="config.plataformaLabel" (ngModelChange)="onChange()" maxlength="30" placeholder="Plataforma" class="input-field" />
+      </div>
+      <div>
+        <label for="plataforma-url" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Enlace (se abre en otra pestaña)</label>
+        <input id="plataforma-url" [(ngModel)]="config.plataformaUrl" (ngModelChange)="onChange()" placeholder="https://plataforma.uets.edu.ec" class="input-field" />
+        @if (config.plataformaUrl && !enlaceValido(config.plataformaUrl)) {
+          <p class="text-xs text-red-600 dark:text-red-400 mt-1">El enlace debe empezar con https:// o http://</p>
+        }
+      </div>
+    </div>
+  </div>
+
   <!-- NAVEGACIÓN -->
   <div class="bg-white dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
     <div class="flex items-center justify-between">
@@ -146,7 +167,11 @@ export class HeaderEditor implements OnInit {
   }
   onChange(): void { this.guardado = false; }
 
+  enlaceValido(url?: string): boolean { return /^https?:\/\/\S+$/i.test((url || '').trim()); }
+
   guardar(): void {
+    if (this.config.plataformaUrl && !this.enlaceValido(this.config.plataformaUrl)) return;
+    this.config.plataformaUrl = (this.config.plataformaUrl || '').trim();
     this.svc.guardar(this.config).subscribe();
     this.guardado = true;
     if (this.timer) clearTimeout(this.timer);
